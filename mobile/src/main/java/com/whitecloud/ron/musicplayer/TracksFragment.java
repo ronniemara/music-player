@@ -1,27 +1,19 @@
 package com.whitecloud.ron.musicplayer;
 
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
-import android.os.Binder;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.SearchView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import com.whitecloud.ron.musicplayer.artist.Artist;
 import com.whitecloud.ron.musicplayer.dummy.DummyContent;
 import com.whitecloud.ron.musicplayer.dummy.DummyContent.DummyItem;
+import com.whitecloud.ron.musicplayer.track.Track;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,50 +24,31 @@ import java.util.List;
  * Activities containing this fragment MUST implement the {@link OnListFragmentInteractionListener}
  * interface.
  */
-public class ArtistsFragment extends Fragment {
+public class TracksFragment extends Fragment {
 
     // TODO: Customize parameter argument names
     private static final String ARG_COLUMN_COUNT = "column-count";
     // TODO: Customize parameters
     private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
-    private List<Artist> mArtists;
-
-    private MusicService mMusicService;
-    private MusicService.LocalBInder mBinder;
-    private boolean isBound = false;
+    private List<Track> mTracks;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
      * fragment (e.g. upon screen orientation changes).
      */
-    public ArtistsFragment() {
+    public TracksFragment() {
     }
 
     // TODO: Customize parameter initialization
     @SuppressWarnings("unused")
-    public static ArtistsFragment newInstance(int columnCount) {
-        ArtistsFragment fragment = new ArtistsFragment();
+    public static TracksFragment newInstance(int columnCount) {
+        TracksFragment fragment = new TracksFragment();
         Bundle args = new Bundle();
         args.putInt(ARG_COLUMN_COUNT, columnCount);
         fragment.setArguments(args);
         return fragment;
     }
-
-    public ServiceConnection mSrvcCxn = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName name, IBinder service) {
-            mBinder = (MusicService.LocalBInder) service;
-            mMusicService= mBinder.getService();
-            isBound = true;
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName name) {
-            isBound = false;
-            mMusicService = null;
-        }
-    };
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -85,40 +58,13 @@ public class ArtistsFragment extends Fragment {
             mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
         }
 
-        mArtists = new ArrayList<>();
-        Intent i = new Intent(getActivity(), MusicService.class);
-        getActivity().bindService(i, mSrvcCxn, getActivity().BIND_AUTO_CREATE);
+        mTracks = new ArrayList<>();
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_artists_list, container, false);
-
-        final SearchView searchView = (SearchView) view.findViewById(R.id.search_view);
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                searchView.clearFocus();
-
-                boolean isConnected = isConnected();
-
-                if (isConnected) {
-                    mArtists =mMusicService.getArtists(query);
-                } else {
-                    Toast.makeText(getActivity(), "There is no internet connection." +
-                            " Please try again when you have access to the internet.",
-                            Toast.LENGTH_SHORT).show();
-                }
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                return false;
-            }
-        });
-
+        View view = inflater.inflate(R.layout.fragment_track_list, container, false);
 
         // Set the adapter
         if (view instanceof RecyclerView) {
@@ -129,21 +75,9 @@ public class ArtistsFragment extends Fragment {
             } else {
                 recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
             }
-            recyclerView.setAdapter(new MyArtistsRecyclerViewAdapter(mArtists, mListener));
+            recyclerView.setAdapter(new MyTrackRecyclerViewAdapter(mTracks, mListener));
         }
-
-
-
         return view;
-    }
-
-    private boolean isConnected() {
-        ConnectivityManager cm =
-                (ConnectivityManager) getActivity().getSystemService(Context.CONNECTIVITY_SERVICE);
-
-        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
-        return activeNetwork != null &&
-                activeNetwork.isConnectedOrConnecting();
     }
 
 
@@ -175,14 +109,7 @@ public class ArtistsFragment extends Fragment {
      * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnListFragmentInteractionListener {
-
-        void onListFragmentInteraction(Artist item);
-    }
-
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        getActivity().unbindService(mSrvcCxn);
+        // TODO: Update argument type and name
+        void onListFragmentInteraction(Track item);
     }
 }

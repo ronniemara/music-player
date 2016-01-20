@@ -1,48 +1,30 @@
 package com.whitecloud.ron.musicplayer;
 
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
-
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.whitecloud.ron.musicplayer.artist.Artist;
 import com.whitecloud.ron.musicplayer.dummy.DummyContent;
+import com.whitecloud.ron.musicplayer.track.Track;
 
-public class MainActivity extends AppCompatActivity implements ArtistsFragment.OnListFragmentInteractionListener {
 
-    /**
-     * ATTENTION: This was auto-generated to implement the App Indexing API.
-     * See https://g.co/AppIndexing/AndroidStudio for more information.
-     */
+import android.view.Menu;
+import android.view.MenuItem;
+
+/**
+ * Created by ron on 19/01/16.
+ */
+public class TracksActivity extends AppCompatActivity implements TracksFragment.OnListFragmentInteractionListener{
     private GoogleApiClient client;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
     @Override
@@ -65,16 +47,6 @@ public class MainActivity extends AppCompatActivity implements ArtistsFragment.O
         }
 
         return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public void onListFragmentInteraction(Artist item) {
-        Intent i = new Intent(this, TracksActivity.class);
-        Bundle b = new Bundle();
-        b.putParcelable("com.whitecloud.ron.Artist", item);
-        i.putExtras(b);
-
-        startActivity(i);
     }
 
     @Override
@@ -115,5 +87,15 @@ public class MainActivity extends AppCompatActivity implements ArtistsFragment.O
         );
         AppIndex.AppIndexApi.end(client, viewAction);
         client.disconnect();
+    }
+
+    @Override
+    public void onListFragmentInteraction(Track item) {
+        Intent i = new Intent(this, PlayerActivity.class);
+        Bundle b = new Bundle();
+        b.putParcelable("com.whitecloud.ron.Track", item);
+        i.putExtras(b);
+
+        startActivity(i);
     }
 }
