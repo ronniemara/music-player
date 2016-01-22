@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="horizontal" android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <fragment
+        android:id="@+id/artists_fragment"
+        android:layout_width="400dp"
+        android:layout_marginRight="@dimen/activity_horizontal_margin"
+        android:layout_height="match_parent"
+        android:name="com.whitecloud.ron.musicplayer.ArtistsFragment"
+        tools:layout="@layout/fragment_artists_list" />
+
+    <fragment
+        android:id="@+id/tracks_fragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:name="com.whitecloud.ron.musicplayer.TracksFragment"
+        tools:layout="@layout/fragment_track_list" />
+
+</LinearLayout>
