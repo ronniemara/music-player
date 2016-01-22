@@ -1,6 +1,7 @@
 package com.whitecloud.ron.musicplayer;
 
 import android.content.Intent;
+import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -16,14 +17,21 @@ import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.whitecloud.ron.musicplayer.artist.Artist;
 import com.whitecloud.ron.musicplayer.dummy.DummyContent;
+import com.whitecloud.ron.musicplayer.track.Track;
 
-public class MainActivity extends AppCompatActivity implements ArtistsFragment.OnListFragmentInteractionListener {
+import java.util.ResourceBundle;
+
+public class MainActivity extends AppCompatActivity
+        implements ArtistsFragment.OnListFragmentInteractionListener,
+                    TracksFragment.OnListFragmentInteractionListener{
 
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
     private GoogleApiClient client;
+
+    private TracksFragment tracksFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -108,5 +116,15 @@ public class MainActivity extends AppCompatActivity implements ArtistsFragment.O
         );
         AppIndex.AppIndexApi.end(client, viewAction);
         client.disconnect();
+    }
+
+    @Override
+    public void onListFragmentInteraction(Track item) {
+        boolean dualPane = Resources.getSystem().getBoolean(R.bool.dualPane);
+
+        if(dualPane) {
+            TracksFragment tracksFragment = (TracksFragment) getSupportFragmentManager().findFragmentById(R.id.tracks_fragment);
+            tracksFragment.showDialog();
+        }
     }
 }
