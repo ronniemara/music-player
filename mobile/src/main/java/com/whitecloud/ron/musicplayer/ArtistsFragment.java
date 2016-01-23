@@ -50,6 +50,7 @@ public class ArtistsFragment extends Fragment {
     private MusicService.LocalBInder mBinder;
     private boolean isBound = false;
     private SearchView mSearchView;
+    private MyArtistsRecyclerViewAdapter     mMyArtistsRecyclerViewAdapter;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -97,36 +98,32 @@ public class ArtistsFragment extends Fragment {
         Intent intent = new Intent(getActivity(), MusicService.class);
         getActivity().bindService(intent, mSrvcCxn, Context.BIND_AUTO_CREATE);
 
-
-        for (int i=0; i < 10; i++) {
-            mArtists.add(new Artist("bob", "jkhsdfjkfsd", "kjfskjlfsd"));
-
-        }
-
         setHasOptionsMenu(true);
     }
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
 
-
         getActivity().getMenuInflater().inflate(R.menu.artist_search, menu);
 
         MenuItem searchItem = menu.findItem(R.id.action_search);
 
-        mSearchView= (SearchView) MenuItemCompat.getActionView(searchItem);
+        mSearchView = (SearchView) MenuItemCompat.getActionView(searchItem);
         mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
             @Override
             public boolean onQueryTextSubmit(String query) {
                 mSearchView.clearFocus();
-
                 boolean isConnected = isConnected();
 
                 if (isConnected) {
-                    mArtists =mMusicService.getArtists(query);
+                    mArtists = mMusicService.getArtists(query);
+                    Log.i(TAG, Integer.toString(mArtists.size()));
+                    if (!mArtists.isEmpty()) {
+                        mMyArtistsRecyclerViewAdapter.notifyDataSetChanged();
+                    }
                 } else {
                     Toast.makeText(getActivity(), "There is no internet connection." +
-                            " Please try again when you have access to the internet.",
+                                    " Please try again when you have access to the internet.",
                             Toast.LENGTH_SHORT).show();
                 }
                 return true;
@@ -156,7 +153,8 @@ public class ArtistsFragment extends Fragment {
             } else {
                 recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
             }
-            recyclerView.setAdapter(new MyArtistsRecyclerViewAdapter(mArtists, mListener));
+            mMyArtistsRecyclerViewAdapter = new MyArtistsRecyclerViewAdapter(mArtists, mListener);
+            recyclerView.setAdapter(mMyArtistsRecyclerViewAdapter);
         }
 
 

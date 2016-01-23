@@ -20,7 +20,7 @@ import kaaes.spotify.webapi.android.models.ArtistsPager;
 public class MusicService extends Service implements onTaskCompleted{
 
     private IBinder mIBInder = new LocalBInder();
-    private List<Artist>  mArtists = null;
+    private List<Artist>  mArtists = new ArrayList<>();
 
     @Nullable
     @Override
@@ -43,7 +43,6 @@ public class MusicService extends Service implements onTaskCompleted{
     public List<Artist> getArtists(String query) {
         FetchArtistsTask fetchArtistsTask =  new FetchArtistsTask(this);
         fetchArtistsTask.execute(query);
-
         return mArtists;
     }
 
@@ -66,7 +65,15 @@ public class MusicService extends Service implements onTaskCompleted{
 
             for (int i=0;  i < artistsList.size(); i++) {
                 kaaes.spotify.webapi.android.models.Artist artist = artistsList.get(i);
-               result.add(new Artist(artist.name, artist.id, artist.images.get(0).url));
+                boolean isEmpty = artist.images.isEmpty();
+                String url;
+                if(isEmpty) {
+                    url = null;
+                }
+                else {
+                    url = artist.images.get(0).url;
+                }
+               result.add(new Artist(artist.name, artist.id, url));
             }
             return result;
         }
