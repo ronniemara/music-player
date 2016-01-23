@@ -10,11 +10,16 @@ import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.MenuItemCompat;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.SearchView;
+import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
@@ -39,9 +44,12 @@ public class ArtistsFragment extends Fragment {
     private OnListFragmentInteractionListener mListener;
     private List<Artist> mArtists;
 
+    private final String TAG = ArtistsFragment.class.getSimpleName();
+
     private MusicService mMusicService;
     private MusicService.LocalBInder mBinder;
     private boolean isBound = false;
+    private SearchView mSearchView;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -63,6 +71,8 @@ public class ArtistsFragment extends Fragment {
     public ServiceConnection mSrvcCxn = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
+
+            Log.i(TAG, "onServiceConnected");
             mBinder = (MusicService.LocalBInder) service;
             mMusicService= mBinder.getService();
             isBound = true;
@@ -92,37 +102,50 @@ public class ArtistsFragment extends Fragment {
             mArtists.add(new Artist("bob", "jkhsdfjkfsd", "kjfskjlfsd"));
 
         }
+
+        setHasOptionsMenu(true);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+
+
+        getActivity().getMenuInflater().inflate(R.menu.artist_search, menu);
+
+        MenuItem searchItem = menu.findItem(R.id.action_search);
+
+        mSearchView= (SearchView) MenuItemCompat.getActionView(searchItem);
+        mSearchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+            @Override
+            public boolean onQueryTextSubmit(String query) {
+                mSearchView.clearFocus();
+
+                boolean isConnected = isConnected();
+
+                if (isConnected) {
+                    mArtists =mMusicService.getArtists(query);
+                } else {
+                    Toast.makeText(getActivity(), "There is no internet connection." +
+                            " Please try again when you have access to the internet.",
+                            Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            }
+
+            @Override
+            public boolean onQueryTextChange(String newText) {
+                return false;
+            }
+        });
+
+        super.onCreateOptionsMenu(menu, inflater);
+
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_artists_list, container, false);
-
-//        final SearchView searchView = (SearchView) view.findViewById(R.id.search_view);
-//        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-//            @Override
-//            public boolean onQueryTextSubmit(String query) {
-//                searchView.clearFocus();
-//
-//                boolean isConnected = isConnected();
-//
-//                if (isConnected) {
-//                    mArtists =mMusicService.getArtists(query);
-//                } else {
-//                    Toast.makeText(getActivity(), "There is no internet connection." +
-//                            " Please try again when you have access to the internet.",
-//                            Toast.LENGTH_SHORT).show();
-//                }
-//                return true;
-//            }
-//
-//            @Override
-//            public boolean onQueryTextChange(String newText) {
-//                return false;
-//            }
-//        });
-//
 
         // Set the adapter
         if (view instanceof RecyclerView) {
