@@ -43,9 +43,12 @@ public class MyArtistsRecyclerViewAdapter extends RecyclerView.Adapter<MyArtists
 
         Picasso.with(holder.mContentView.getContext())
                 .load(mValues.get(position).getmImageUrl())
+                .placeholder(R.drawable.placeholderscaled)
+                .error(R.drawable.errorscaled)
                 .fit()
                 .centerCrop()
                 .into(holder.mContentView);
+
 
         holder.mView.setOnClickListener(new View.OnClickListener() {
             @Override

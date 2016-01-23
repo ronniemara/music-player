@@ -26,6 +26,13 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".TracksActivity"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.NoActionBar">
+
+        </activity>
+
         <service android:name=".MusicService">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />

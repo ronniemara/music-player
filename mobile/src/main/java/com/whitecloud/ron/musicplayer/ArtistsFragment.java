@@ -20,8 +20,6 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.whitecloud.ron.musicplayer.artist.Artist;
-import com.whitecloud.ron.musicplayer.dummy.DummyContent;
-import com.whitecloud.ron.musicplayer.dummy.DummyContent.DummyItem;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -86,8 +84,14 @@ public class ArtistsFragment extends Fragment {
         }
 
         mArtists = new ArrayList<>();
-        Intent i = new Intent(getActivity(), MusicService.class);
-        getActivity().bindService(i, mSrvcCxn, getActivity().BIND_AUTO_CREATE);
+        Intent intent = new Intent(getActivity(), MusicService.class);
+        getActivity().bindService(intent, mSrvcCxn, Context.BIND_AUTO_CREATE);
+
+
+        for (int i=0; i < 10; i++) {
+            mArtists.add(new Artist("bob", "jkhsdfjkfsd", "kjfskjlfsd"));
+
+        }
     }
 
     @Override
@@ -95,30 +99,30 @@ public class ArtistsFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_artists_list, container, false);
 
-        final SearchView searchView = (SearchView) view.findViewById(R.id.search_view);
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                searchView.clearFocus();
-
-                boolean isConnected = isConnected();
-
-                if (isConnected) {
-                    mArtists =mMusicService.getArtists(query);
-                } else {
-                    Toast.makeText(getActivity(), "There is no internet connection." +
-                            " Please try again when you have access to the internet.",
-                            Toast.LENGTH_SHORT).show();
-                }
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                return false;
-            }
-        });
-
+//        final SearchView searchView = (SearchView) view.findViewById(R.id.search_view);
+//        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+//            @Override
+//            public boolean onQueryTextSubmit(String query) {
+//                searchView.clearFocus();
+//
+//                boolean isConnected = isConnected();
+//
+//                if (isConnected) {
+//                    mArtists =mMusicService.getArtists(query);
+//                } else {
+//                    Toast.makeText(getActivity(), "There is no internet connection." +
+//                            " Please try again when you have access to the internet.",
+//                            Toast.LENGTH_SHORT).show();
+//                }
+//                return true;
+//            }
+//
+//            @Override
+//            public boolean onQueryTextChange(String newText) {
+//                return false;
+//            }
+//        });
+//
 
         // Set the adapter
         if (view instanceof RecyclerView) {
