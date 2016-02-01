@@ -10,9 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.whitecloud.ron.musicplayer.artist.Artist;
-import com.whitecloud.ron.musicplayer.dummy.DummyContent;
-import com.whitecloud.ron.musicplayer.dummy.DummyContent.DummyItem;
+
 import com.whitecloud.ron.musicplayer.track.Track;
 
 import java.util.ArrayList;

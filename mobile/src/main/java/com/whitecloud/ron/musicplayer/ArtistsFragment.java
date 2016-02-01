@@ -6,9 +6,11 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.Binder;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.RemoteException;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.widget.GridLayoutManager;
@@ -50,7 +52,18 @@ public class ArtistsFragment extends Fragment {
     private MusicService.LocalBInder mBinder;
     private boolean isBound = false;
     private SearchView mSearchView;
-    private MyArtistsRecyclerViewAdapter     mMyArtistsRecyclerViewAdapter;
+
+    private RecyclerView mRecyclerView;
+    private RecyclerView.Adapter mAdapter;
+    private RecyclerView.LayoutManager mLayoutManager;
+
+
+    private Messenger mReqMessengerRef;
+
+    private Messenger mReplyMessenger;
+
+    private ReplyHandler mReplyHandler;
+
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -74,15 +87,15 @@ public class ArtistsFragment extends Fragment {
         public void onServiceConnected(ComponentName name, IBinder service) {
 
             Log.i(TAG, "onServiceConnected");
-            mBinder = (MusicService.LocalBInder) service;
-            mMusicService= mBinder.getService();
+            mReqMessengerRef = new Messenger(service);
+
             isBound = true;
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             isBound = false;
-            mMusicService = null;
+            mReqMessengerRef = null;
         }
     };
 
@@ -95,14 +108,45 @@ public class ArtistsFragment extends Fragment {
         }
 
         mArtists = new ArrayList<>();
+        mReplyHandler = new ReplyHandler();
+        mReplyMessenger = new Messenger(mReplyHandler);
         Intent intent = new Intent(getActivity(), MusicService.class);
         getActivity().bindService(intent, mSrvcCxn, Context.BIND_AUTO_CREATE);
 
         setHasOptionsMenu(true);
+
+
     }
 
+    class ReplyHandler extends android.os.Handler {
+        @Override
+        public void handleMessage(Message msg) {
+
+            ArrayList<Artist> artists = MusicService.artists(msg);
+
+            for(int i=0; i< artists.size(); i++) {
+                Artist artist = artists.get(i);
+                if(!artists.isEmpty()) {
+                    mArtists.add(new Artist(artist.getmName(), artist.getmSpotifyId(), artist.getmImageUrl()));
+                    mAdapter.notifyDataSetChanged();
+                }
+
+
+            }
+            Log.i(TAG, Integer.toString(mArtists.size()));
+            if (!mArtists.isEmpty()) {
+                mAdapter.notifyDataSetChanged();
+            }
+            super.handleMessage(msg);
+        }
+    }
+
+
+    final int GET_ARTISTS = 1;
+    final int GET_TRACKS = 2;
+
     @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+    public void onCreateOptionsMenu(final Menu menu, MenuInflater inflater) {
 
         getActivity().getMenuInflater().inflate(R.menu.artist_search, menu);
 
@@ -116,11 +160,19 @@ public class ArtistsFragment extends Fragment {
                 boolean isConnected = isConnected();
 
                 if (isConnected) {
-                    mArtists = mMusicService.getArtists(query);
-                    Log.i(TAG, Integer.toString(mArtists.size()));
-                    if (!mArtists.isEmpty()) {
-                        mMyArtistsRecyclerViewAdapter.notifyDataSetChanged();
+                  Message message = Message.obtain();
+                    message.what = GET_ARTISTS;
+                    message.replyTo = mReplyMessenger;
+                    Bundle bundle = new Bundle();
+                    bundle.putString("query", query );
+                    message.setData(bundle);
+
+                    try {
+                        mReqMessengerRef.send(message);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
                     }
+
                 } else {
                     Toast.makeText(getActivity(), "There is no internet connection." +
                                     " Please try again when you have access to the internet.",
@@ -139,6 +191,10 @@ public class ArtistsFragment extends Fragment {
 
     }
 
+    static String  getQuery(Message reqMessage) {
+        return reqMessage.getData().getString("query");
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -147,17 +203,17 @@ public class ArtistsFragment extends Fragment {
         // Set the adapter
         if (view instanceof RecyclerView) {
             Context context = view.getContext();
-            RecyclerView recyclerView = (RecyclerView) view;
+            mRecyclerView = (RecyclerView) view;
             if (mColumnCount <= 1) {
-                recyclerView.setLayoutManager(new LinearLayoutManager(context));
+                mLayoutManager = new LinearLayoutManager(context);
             } else {
-                recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
+                mLayoutManager =new GridLayoutManager(context, mColumnCount);
             }
-            mMyArtistsRecyclerViewAdapter = new MyArtistsRecyclerViewAdapter(mArtists, mListener);
-            recyclerView.setAdapter(mMyArtistsRecyclerViewAdapter);
+
+            mRecyclerView.setLayoutManager(mLayoutManager);
+            mAdapter = new MyArtistsRecyclerViewAdapter(mArtists, mListener);
+            mRecyclerView.setAdapter(mAdapter);
         }
-
-
 
         return view;
     }
