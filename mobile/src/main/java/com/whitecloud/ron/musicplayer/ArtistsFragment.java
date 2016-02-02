@@ -124,6 +124,8 @@ public class ArtistsFragment extends Fragment {
 
             ArrayList<Artist> artists = MusicService.artists(msg);
 
+            mArtists.clear();
+
             for(int i=0; i< artists.size(); i++) {
                 Artist artist = artists.get(i);
                 if(!artists.isEmpty()) {
@@ -134,10 +136,8 @@ public class ArtistsFragment extends Fragment {
 
             }
             Log.i(TAG, Integer.toString(mArtists.size()));
-            if (!mArtists.isEmpty()) {
-                mAdapter.notifyDataSetChanged();
-            }
-            super.handleMessage(msg);
+
+
         }
     }
 
