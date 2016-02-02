@@ -8,7 +8,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
-import com.whitecloud.ron.musicplayer.ArtistsFragment.OnListFragmentInteractionListener;
 import com.whitecloud.ron.musicplayer.artist.Artist;
 
 
@@ -32,7 +31,7 @@ public class MyArtistsRecyclerViewAdapter extends RecyclerView.Adapter<MyArtists
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.fragment_artists, parent, false);
+                .inflate(R.layout.fragment_artists_one_item, parent, false);
         return new ViewHolder(view);
     }
 

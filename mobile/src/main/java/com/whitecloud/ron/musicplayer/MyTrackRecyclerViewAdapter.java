@@ -32,7 +32,7 @@ public class MyTrackRecyclerViewAdapter extends RecyclerView.Adapter<MyTrackRecy
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.fragment_track, parent, false);
+                .inflate(R.layout.fragment_track_one_item, parent, false);
         return new ViewHolder(view);
     }
 

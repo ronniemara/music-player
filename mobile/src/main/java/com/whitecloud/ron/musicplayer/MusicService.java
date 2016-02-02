@@ -15,6 +15,7 @@ import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.whitecloud.ron.musicplayer.artist.Artist;
 import com.whitecloud.ron.musicplayer.track.Track;
@@ -30,6 +31,7 @@ import kaaes.spotify.webapi.android.SpotifyService;
 
 import kaaes.spotify.webapi.android.models.ArtistsPager;
 import kaaes.spotify.webapi.android.models.Tracks;
+import retrofit.RetrofitError;
 
 public class MusicService extends Service {
 
@@ -81,10 +83,7 @@ public class MusicService extends Service {
                         @Override
                         public void run() {
                             Log.i(TAG, Integer.toString(msg.what));
-
-
                             Message artists = onGetArtists(query);
-
                             try {
                                 replyMessenger.send(artists);
                             } catch (RemoteException e) {
@@ -109,7 +108,15 @@ public class MusicService extends Service {
    	Message onGetArtists( String query) {
         SpotifyApi api = new SpotifyApi();
         SpotifyService spotify = api.getService();
-        ArtistsPager artists = spotify.searchArtists(query);
+
+
+        ArtistsPager artists = null;
+        try {
+             artists = spotify.searchArtists(query);
+        } catch(RetrofitError e) {
+            Toast.makeText(MusicService.this, e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+
         List<kaaes.spotify.webapi.android.models.Artist> artistList = artists.artists.items;
 
         //clear previous artist list

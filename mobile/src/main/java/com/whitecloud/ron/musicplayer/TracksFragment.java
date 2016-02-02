@@ -1,7 +1,12 @@
 package com.whitecloud.ron.musicplayer;
 
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.os.Messenger;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
@@ -11,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 
+import com.whitecloud.ron.musicplayer.artist.Artist;
 import com.whitecloud.ron.musicplayer.track.Track;
 
 import java.util.ArrayList;
@@ -30,6 +36,8 @@ public class TracksFragment extends Fragment {
     private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
     private List<Track> mTracks;
+    private Artist mArtist;
+    private Messenger mMessenger;
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -56,8 +64,32 @@ public class TracksFragment extends Fragment {
             mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
         }
 
+        Bundle extras = getActivity().getIntent().getExtras();
+
+        if(extras != null && extras.containsKey("com.whitecloud.ron.Artist")) {
+            mArtist = (Artist) extras.get("com.whitecloud.ron.Artist");
+        }
+
         mTracks = new ArrayList<>();
+
+        Intent intent = new Intent(getActivity(), MusicService.class);
+        getActivity().bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
+
+        
+
     }
+
+    private ServiceConnection mServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mMessenger = new Messenger(service);
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mMessenger = null;
+        }
+    };
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,

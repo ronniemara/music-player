@@ -19,7 +19,7 @@ import android.view.MenuItem;
  * Created by ron on 19/01/16.
  */
 public class TracksActivity extends AppCompatActivity implements TracksFragment.OnListFragmentInteractionListener{
-    private GoogleApiClient client;
+//    private GoogleApiClient client;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

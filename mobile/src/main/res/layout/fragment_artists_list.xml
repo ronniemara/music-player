@@ -11,7 +11,7 @@
         android:layout_marginRight="16dp"
         app:layoutManager="LinearLayoutManager"
         tools:context="com.whitecloud.ron.musicplayer.ArtistsFragment"
-        tools:listitem="@layout/fragment_artists"
+        tools:listitem="@layout/fragment_artists_one_item"
     />
 
 
@@ -35,6 +35,6 @@
         android:layout_marginRight="16dp"
         app:layoutManager="LinearLayoutManager"
         tools:context="com.whitecloud.ron.musicplayer.ArtistsFragment"
-        tools:listitem="@layout/fragment_artists" />
+        tools:listitem="@layout/fragment_artists_one_item" />
 </LinearLayout> -->
 
