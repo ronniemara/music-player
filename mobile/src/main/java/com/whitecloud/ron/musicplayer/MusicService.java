@@ -111,6 +111,9 @@ public class MusicService extends Service {
         SpotifyService spotify = api.getService();
         ArtistsPager artists = spotify.searchArtists(query);
         List<kaaes.spotify.webapi.android.models.Artist> artistList = artists.artists.items;
+
+        //clear previous artist list
+        mArtists.clear();
         for (int i = 0; i < artistList.size(); i++){
             kaaes.spotify.webapi.android.models.Artist artist = artistList.get(i);
             String imageUrl = artist.images.isEmpty() ? null : artist.images.get(0).url;

@@ -3,5 +3,8 @@
     <item name="main" type="layout">
         @layout/two_pane
     </item>
+    <item name="tracks" type="layout">
+        @layout/tracks_two_pane
+    </item>
     <bool name="dualPane">true</bool>
 </resources>
