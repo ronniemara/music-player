@@ -44,8 +44,8 @@ public class MyArtistsRecyclerViewAdapter extends RecyclerView.Adapter<MyArtists
                 .load(mValues.get(position).getmImageUrl())
                 .placeholder(R.drawable.placeholderscaled)
                 .error(R.drawable.errorscaled)
-                .fit()
                 .centerCrop()
+                .fit()
                 .into(holder.mContentView);
 
 

@@ -6,5 +6,9 @@
     <item name="tracks" type="layout">
         @layout/track_activity
     </item>
+
+    <item name="player" type="layout">
+        @layout/player_activity
+    </item>
     <bool name="dualPane">false</bool>
 </resources>
