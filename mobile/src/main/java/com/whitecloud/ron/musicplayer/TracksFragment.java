@@ -39,8 +39,13 @@ public class TracksFragment extends Fragment {
     // TODO: Customize parameters
     private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
+
+    RecyclerView mTracksRecyclerView;
+    MyTrackRecyclerViewAdapter mViewAdapter;
+
     private List<Song> mSongs;
     private Singer mArtist;
+
     private Messenger mReqMessengerRef;
     private Messenger mReplyMessenger;
     private ReplyHandler mReplyHandler;
@@ -48,6 +53,7 @@ public class TracksFragment extends Fragment {
 
     final int GET_ARTISTS = 1;
     final int GET_TRACKS = 2;
+    final int GET_TRACKS_OK = 3;
 
     private final String TAG = TracksFragment.class.getSimpleName();
 
@@ -62,7 +68,21 @@ public class TracksFragment extends Fragment {
         @Override
         public void handleMessage(Message msg) {
             switch(msg.what) {
+                case GET_TRACKS_OK : {
+                    ArrayList<Song> songs = MusicService.getSongs(msg);
 
+                    mSongs.clear();
+
+                    for(int i=0; i< songs.size(); i++) {
+                        Song song = songs.get(i);
+                        if(!songs.isEmpty()) {
+                            mSongs.add(new Song(song.getmPreviewUrl(), song.getmName(),
+                                    song.getmAlbum(), song.getmSmallImageUrl(), song.getmLargeImageUrl()));
+                            mViewAdapter.notifyDataSetChanged();
+                        }
+                    }
+                    Log.i(TAG, Integer.toString(mSongs.size()));
+                }
             }
         }
     }
@@ -102,8 +122,6 @@ public class TracksFragment extends Fragment {
         super.onStart();
         Intent intent = new Intent(getActivity(), MusicService.class);
         getActivity().bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
-
-
     }
 
     public ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -141,19 +159,21 @@ public class TracksFragment extends Fragment {
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_track_list, container, false);
 
-        RecyclerView recyclerView = (RecyclerView) view.findViewById(R.id.trackslist);
-
         // Set the adapter
         if (view instanceof RecyclerView) {
             Context context = view.getContext();
-
+            mTracksRecyclerView = (RecyclerView) view;
             if (mColumnCount <= 1) {
-                recyclerView.setLayoutManager(new LinearLayoutManager(context));
+                mTracksRecyclerView.setLayoutManager(new LinearLayoutManager(context));
             } else {
-                recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
+                mTracksRecyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
             }
-            recyclerView.setAdapter(new MyTrackRecyclerViewAdapter(mSongs, mListener));
+
+            mViewAdapter = new MyTrackRecyclerViewAdapter(mSongs, mListener);
+
+            mTracksRecyclerView.setAdapter(mViewAdapter);
         }
+
         return view;
     }
 
@@ -173,6 +193,13 @@ public class TracksFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        getActivity().unbindService(mServiceConnection);
     }
 
     public void showDialog() {

@@ -7,6 +7,7 @@ import android.support.v7.app.AppCompatActivity;
 import com.whitecloud.ron.musicplayer.track.Song;
 
 
+import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -20,6 +21,10 @@ public class TracksActivity extends AppCompatActivity implements TracksFragment.
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.tracks);
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(toolbar);
+
+
     }
 
     @Override

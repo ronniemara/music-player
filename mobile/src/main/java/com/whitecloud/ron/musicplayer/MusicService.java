@@ -43,6 +43,11 @@ public class MusicService extends Service {
 
     private Handler mRequestHandler;
 
+    final int GET_ARTISTS = 1;
+    final int GET_TRACKS = 2;
+    final int GET_TRACKS_OK = 3;
+//    final int ERROR_RESPONSE =3;
+
 
     @Override
     public void onCreate() {
@@ -55,13 +60,17 @@ public class MusicService extends Service {
         spotify = api.getService();
     }
 
+    public static ArrayList<Song> getSongs(Message msg) {
+        return msg.getData().getParcelableArrayList("com.whitecloud.ron.musicplayer.songs");
+    }
+
     class RequestHandler extends Handler {
 
         SharedPreferences database;
         private final int MAX_FIXED_THREAD_POOL = 4;
         ExecutorService mExecutor;
-        final int GET_ARTISTS = 1;
-        final int GET_TRACKS = 2;
+
+
 
 
         public RequestHandler() {
@@ -151,6 +160,7 @@ public class MusicService extends Service {
         }
 
         Message msg = Message.obtain();
+        msg.what = GET_TRACKS_OK;
         Bundle data = new Bundle();
         data.putParcelableArrayList("com.whitecloud.ron.musicplayer.songs", mSongs);
         msg.setData(data);

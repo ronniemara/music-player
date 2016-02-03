@@ -54,7 +54,6 @@ public class ArtistsFragment extends Fragment {
 
     private RecyclerView mRecyclerView;
     private RecyclerView.Adapter mAdapter;
-    private RecyclerView.LayoutManager mLayoutManager;
 
 
     private Messenger mReqMessengerRef;
@@ -199,12 +198,11 @@ public class ArtistsFragment extends Fragment {
             Context context = view.getContext();
             mRecyclerView = (RecyclerView) view;
             if (mColumnCount <= 1) {
-                mLayoutManager = new LinearLayoutManager(context);
+                mRecyclerView.setLayoutManager(new LinearLayoutManager(context));
             } else {
-                mLayoutManager =new GridLayoutManager(context, mColumnCount);
+                mRecyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
             }
 
-            mRecyclerView.setLayoutManager(mLayoutManager);
             mAdapter = new MyArtistsRecyclerViewAdapter(mArtists, mListener);
             mRecyclerView.setAdapter(mAdapter);
         }

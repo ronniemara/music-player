@@ -20,11 +20,7 @@
             app:popupTheme="@style/AppTheme.PopupOverlay" />
 
     </android.support.design.widget.AppBarLayout>
-    <ProgressBar
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:id="@+id/progress_bar_id"
-        android:indeterminate="false"/>
+
     <fragment
         android:id="@+id/tracks_fragment"
         android:layout_height="match_parent"
