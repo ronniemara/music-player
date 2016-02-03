@@ -6,18 +6,18 @@ import android.os.Parcelable;
 /**
  * Created by ron on 19/01/16.
  */
-public class Artist implements Parcelable {
+public class Singer implements Parcelable {
     private String mName;
     private String mSpotifyId;
     private String mImageUrl;
 
-    public Artist(String name, String spotifyId, String imageUrl) {
+    public Singer(String name, String spotifyId, String imageUrl) {
         mName = name;
         mSpotifyId = spotifyId;
         mImageUrl =  imageUrl;
     }
 
-    private Artist(Parcel source) {
+    private Singer(Parcel source) {
         mName = source.readString();
         mSpotifyId = source.readString();
         mImageUrl = source.readString();
@@ -36,15 +36,15 @@ public class Artist implements Parcelable {
     }
 
 
-    public final Creator<Artist> CREATOR = new Creator<Artist>() {
+    public static final Creator<Singer> CREATOR = new Creator<Singer>() {
         @Override
-        public Artist createFromParcel(Parcel source) {
-            return new Artist(source);
+        public Singer createFromParcel(Parcel source) {
+            return new Singer(source);
         }
 
         @Override
-        public Artist[] newArray(int size) {
-            return new Artist[size];
+        public Singer[] newArray(int size) {
+            return new Singer[size];
         }
     };
 

@@ -6,22 +6,18 @@ import android.content.SharedPreferences;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.HandlerThread;
 import android.os.IBinder;
-import android.os.Looper;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 import android.util.Log;
-import android.widget.Toast;
 
-import com.whitecloud.ron.musicplayer.artist.Artist;
-import com.whitecloud.ron.musicplayer.track.Track;
+import com.whitecloud.ron.musicplayer.artist.Singer;
+import com.whitecloud.ron.musicplayer.track.Song;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -29,22 +25,24 @@ import java.util.concurrent.Executors;
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
 
+import kaaes.spotify.webapi.android.models.Artist;
 import kaaes.spotify.webapi.android.models.ArtistsPager;
+import kaaes.spotify.webapi.android.models.Track;
 import kaaes.spotify.webapi.android.models.Tracks;
 import retrofit.RetrofitError;
 
 public class MusicService extends Service {
 
-    private IBinder mIBInder = new LocalBInder();
     private final static String TAG = MusicService.class.getSimpleName();
     private Messenger mReqMessenger;
 
-    private ArrayList<Artist>  mArtists = new ArrayList<>();
-    private List<Track> mTracks = new ArrayList<>();
+    private ArrayList<Singer>  mArtists = new ArrayList<>();
+    private ArrayList<Song> mSongs = new ArrayList<>();
 
-       // Handler messages
-    private static final int H_GET_ARTISTS = 1;
-    private static final int H_GET_TOP_TRACKS = 2;
+    private SpotifyService spotify;
+
+    private Handler mRequestHandler;
+
 
     @Override
     public void onCreate() {
@@ -52,15 +50,18 @@ public class MusicService extends Service {
 
         mRequestHandler = new RequestHandler();
         mReqMessenger = new Messenger(mRequestHandler);
+
+        SpotifyApi api = new SpotifyApi();
+        spotify = api.getService();
     }
 
     class RequestHandler extends Handler {
 
         SharedPreferences database;
-
-        ExecutorService mExecutor;
-
         private final int MAX_FIXED_THREAD_POOL = 4;
+        ExecutorService mExecutor;
+        final int GET_ARTISTS = 1;
+        final int GET_TRACKS = 2;
 
 
         public RequestHandler() {
@@ -68,63 +69,57 @@ public class MusicService extends Service {
             mExecutor = Executors.newFixedThreadPool(MAX_FIXED_THREAD_POOL);
         }
 
-
-        final int GET_ARTISTS = 1;
-        final int GET_TRACKS = 2;
-
         @Override
         public void handleMessage(final Message msg) {
-
             final Messenger replyMessenger = msg.replyTo;
-            final String query = ArtistsFragment.getQuery(msg);
+
             switch (msg.what) {
                 case GET_ARTISTS: {
+                    final String query = ArtistsFragment.getQuery(msg);
                     mExecutor.execute(new Runnable() {
                         @Override
                         public void run() {
                             Log.i(TAG, Integer.toString(msg.what));
-                            Message artists = onGetArtists(query);
+                                Message artists = onGetArtists(query);
                             try {
                                 replyMessenger.send(artists);
                             } catch (RemoteException e) {
                                 e.printStackTrace();
                             }
-
                         }
                     });
-
-
-                    break;
                 }
-                case H_GET_TOP_TRACKS: {
-                    onGetTopTracks(msg.getData().get("com.whitecloud.ron.musicplayer.spotifyId").toString());
-                    break;
+
+                break;
+                case  GET_TRACKS: {
+                    final Singer singer = TracksFragment.getSinger(msg);
+                      mExecutor.execute(new Runnable() {
+                          @Override
+                          public void run() {
+                             Message message = onGetTopTracks(singer.getmSpotifyId());
+                              try {
+                                  replyMessenger.send(message);
+                              } catch (RemoteException r) {
+                                  r.printStackTrace();
+                              }
+                          }
+                      });
+                    }
                 }
-        
         }
     }
-}
 
-   	Message onGetArtists( String query) {
-        SpotifyApi api = new SpotifyApi();
-        SpotifyService spotify = api.getService();
+   	Message onGetArtists( String query) throws RetrofitError {
 
-
-        ArtistsPager artists = null;
-        try {
-             artists = spotify.searchArtists(query);
-        } catch(RetrofitError e) {
-            Toast.makeText(MusicService.this, e.getMessage(), Toast.LENGTH_SHORT).show();
-        }
-
-        List<kaaes.spotify.webapi.android.models.Artist> artistList = artists.artists.items;
+        ArtistsPager artists = spotify.searchArtists(query);
+        List<Artist> artistList = artists.artists.items;
 
         //clear previous artist list
         mArtists.clear();
         for (int i = 0; i < artistList.size(); i++){
-            kaaes.spotify.webapi.android.models.Artist artist = artistList.get(i);
+            Artist artist = artistList.get(i);
             String imageUrl = artist.images.isEmpty() ? null : artist.images.get(0).url;
-            mArtists.add(new Artist(artist.name, artist.id, imageUrl));
+            mArtists.add(new Singer(artist.name, artist.id, imageUrl));
         }
 
         Message reply = Message.obtain();
@@ -135,56 +130,37 @@ public class MusicService extends Service {
         return reply;
     }
 
-    void getTopTracks(String spotifyId) {
 
-    }
-
-    static ArrayList<Artist> artists(Message msg) {
+    static ArrayList<Singer> artists(Message msg) {
         return msg.getData().getParcelableArrayList("artists");
     }
 
-    Message onGetTopTracks(String spotifyId) {
+    Message onGetTopTracks(String spotifyId)  throws RetrofitError {
         SpotifyApi api = new SpotifyApi();
         SpotifyService spotify = api.getService();
-        Tracks tracks = spotify.getTracks(spotifyId);
-        List<kaaes.spotify.webapi.android.models.Track> trackList = tracks.tracks;
+        Tracks tracks = spotify.getArtistTopTrack(spotifyId, "CA");
+        List<Track> trackList = tracks.tracks;
 
-        for (int i = 0; i < trackList.size(); i++){
-            kaaes.spotify.webapi.android.models.Track track = trackList.get(i);
-            mTracks.add(new Track(track.preview_url, track.name, track.album.name, track.album.images.get(0).url, track.album.images.get(1).url));
+        mSongs.clear();
+
+        if(!trackList.isEmpty()) {
+            for (int i = 0; i < trackList.size(); i++) {
+                Track track = trackList.get(i);
+                mSongs.add(new Song(track.preview_url, track.name, track.album.name, track.album.images.get(0).url, track.album.images.get(1).url));
+            }
         }
 
         Message msg = Message.obtain();
         Bundle data = new Bundle();
-        data.putString("com.whitecloud.ron.musicplayer.spotifyId", spotifyId);
+        data.putParcelableArrayList("com.whitecloud.ron.musicplayer.songs", mSongs);
         msg.setData(data);
 
-
         return  msg;
-
     }
-
-    private Handler mRequestHandler;
-
-    public List<Artist> getmArtists() {
-        return mArtists;
-    }
-
-
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         return mReqMessenger.getBinder();
     }
-
-
-    public class LocalBInder extends Binder {
-
-        public MusicService getService() {
-            return MusicService.this;
-        }
-    }
-
-
 }

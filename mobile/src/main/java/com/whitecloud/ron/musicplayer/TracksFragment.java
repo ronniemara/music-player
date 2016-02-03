@@ -5,19 +5,23 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.os.Messenger;
+import android.os.RemoteException;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 
-import com.whitecloud.ron.musicplayer.artist.Artist;
-import com.whitecloud.ron.musicplayer.track.Track;
+import com.whitecloud.ron.musicplayer.artist.Singer;
+import com.whitecloud.ron.musicplayer.track.Song;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,15 +39,32 @@ public class TracksFragment extends Fragment {
     // TODO: Customize parameters
     private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
-    private List<Track> mTracks;
-    private Artist mArtist;
-    private Messenger mMessenger;
+    private List<Song> mSongs;
+    private Singer mArtist;
+    private Messenger mReqMessengerRef;
+    private Messenger mReplyMessenger;
+    private ReplyHandler mReplyHandler;
+    private boolean isBound;
+
+    final int GET_ARTISTS = 1;
+    final int GET_TRACKS = 2;
+
+    private final String TAG = TracksFragment.class.getSimpleName();
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
      * fragment (e.g. upon screen orientation changes).
      */
     public TracksFragment() {
+    }
+
+    class ReplyHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            switch(msg.what) {
+
+            }
+        }
     }
 
     // TODO: Customize parameter initialization
@@ -66,28 +87,52 @@ public class TracksFragment extends Fragment {
 
         Bundle extras = getActivity().getIntent().getExtras();
 
-        if(extras != null && extras.containsKey("com.whitecloud.ron.Artist")) {
-            mArtist = (Artist) extras.get("com.whitecloud.ron.Artist");
+        if(extras != null && extras.containsKey("com.whitecloud.ron.Singer")) {
+            mArtist = (Singer) extras.get("com.whitecloud.ron.Singer");
         }
 
-        mTracks = new ArrayList<>();
-
-        Intent intent = new Intent(getActivity(), MusicService.class);
-        getActivity().bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
-
-        
+        mSongs = new ArrayList<>();
+        mReplyHandler = new ReplyHandler();
+        mReplyMessenger = new Messenger(mReplyHandler);
 
     }
 
-    private ServiceConnection mServiceConnection = new ServiceConnection() {
+    @Override
+    public void onStart() {
+        super.onStart();
+        Intent intent = new Intent(getActivity(), MusicService.class);
+        getActivity().bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
+
+
+    }
+
+    public ServiceConnection mServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            mMessenger = new Messenger(service);
+            Log.i(TAG, "inside TracksFragment");
+            mReqMessengerRef = new Messenger(service);
+            if(mReqMessengerRef != null) {
+                Message message = Message.obtain();
+                message.replyTo = mReplyMessenger;
+                message.what = GET_TRACKS;
+                Bundle data = new Bundle();
+                data.putParcelable("com.whitecloud.ron.mArtist", mArtist);
+                message.setData(data);
+
+                try {
+                    mReqMessengerRef.send(message);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+
+            }
+            isBound = true;
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            mMessenger = null;
+            mReqMessengerRef = null;
+            isBound = false;
         }
     };
 
@@ -107,7 +152,7 @@ public class TracksFragment extends Fragment {
             } else {
                 recyclerView.setLayoutManager(new GridLayoutManager(context, mColumnCount));
             }
-            recyclerView.setAdapter(new MyTrackRecyclerViewAdapter(mTracks, mListener));
+            recyclerView.setAdapter(new MyTrackRecyclerViewAdapter(mSongs, mListener));
         }
         return view;
     }
@@ -145,6 +190,10 @@ public class TracksFragment extends Fragment {
      */
     public interface OnListFragmentInteractionListener {
         // TODO: Update argument type and name
-        void onListFragmentInteraction(Track item);
+        void onListFragmentInteraction(Song item);
+    }
+
+    public static Singer getSinger(Message message) {
+        return message.getData().getParcelable("com.whitecloud.ron.mArtist");
     }
 }

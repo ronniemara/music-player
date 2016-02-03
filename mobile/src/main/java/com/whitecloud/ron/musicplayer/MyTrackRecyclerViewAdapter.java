@@ -10,21 +10,21 @@ import android.widget.TextView;
 import com.squareup.picasso.Picasso;
 import com.whitecloud.ron.musicplayer.TracksFragment.OnListFragmentInteractionListener;
 
-import com.whitecloud.ron.musicplayer.track.Track;
+import com.whitecloud.ron.musicplayer.track.Song;
 
 import java.util.List;
 
 /**
- * {@link RecyclerView.Adapter} that can display a {@link Track} and makes a call to the
+ * {@link RecyclerView.Adapter} that can display a {@link Song} and makes a call to the
  * specified {@link OnListFragmentInteractionListener}.
  * TODO: Replace the implementation with code for your data type.
  */
 public class MyTrackRecyclerViewAdapter extends RecyclerView.Adapter<MyTrackRecyclerViewAdapter.ViewHolder> {
 
-    private final List<Track> mValues;
+    private final List<Song> mValues;
     private final OnListFragmentInteractionListener mListener;
 
-    public MyTrackRecyclerViewAdapter(List<Track> items, OnListFragmentInteractionListener listener) {
+    public MyTrackRecyclerViewAdapter(List<Song> items, OnListFragmentInteractionListener listener) {
         mValues = items;
         mListener = listener;
     }
@@ -69,7 +69,7 @@ public class MyTrackRecyclerViewAdapter extends RecyclerView.Adapter<MyTrackRecy
         public final TextView mNameView;
         public final TextView mAlbumView;
         public final ImageView mImageView;
-        public Track mItem;
+        public Song mItem;
 
         public ViewHolder(View view) {
             super(view);

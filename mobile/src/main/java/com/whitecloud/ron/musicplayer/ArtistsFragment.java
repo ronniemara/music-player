@@ -26,7 +26,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import com.whitecloud.ron.musicplayer.artist.Artist;
+import com.whitecloud.ron.musicplayer.artist.Singer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,12 +44,11 @@ public class ArtistsFragment extends Fragment {
     // TODO: Customize parameters
     private int mColumnCount = 1;
     private OnListFragmentInteractionListener mListener;
-    private List<Artist> mArtists;
+    private List<Singer> mArtists;
 
     private final String TAG = ArtistsFragment.class.getSimpleName();
 
-    private MusicService mMusicService;
-    private MusicService.LocalBInder mBinder;
+
     private boolean isBound = false;
     private SearchView mSearchView;
 
@@ -59,10 +58,12 @@ public class ArtistsFragment extends Fragment {
 
 
     private Messenger mReqMessengerRef;
-
     private Messenger mReplyMessenger;
-
     private ReplyHandler mReplyHandler;
+
+
+    final int GET_ARTISTS = 1;
+    final int GET_TRACKS = 2;
 
 
     /**
@@ -88,7 +89,6 @@ public class ArtistsFragment extends Fragment {
 
             Log.i(TAG, "onServiceConnected");
             mReqMessengerRef = new Messenger(service);
-
             isBound = true;
         }
 
@@ -122,28 +122,22 @@ public class ArtistsFragment extends Fragment {
         @Override
         public void handleMessage(Message msg) {
 
-            ArrayList<Artist> artists = MusicService.artists(msg);
+            ArrayList<Singer> artists = MusicService.artists(msg);
 
             mArtists.clear();
 
             for(int i=0; i< artists.size(); i++) {
-                Artist artist = artists.get(i);
+                Singer artist = artists.get(i);
                 if(!artists.isEmpty()) {
-                    mArtists.add(new Artist(artist.getmName(), artist.getmSpotifyId(), artist.getmImageUrl()));
+                    mArtists.add(new Singer(artist.getmName(), artist.getmSpotifyId(), artist.getmImageUrl()));
                     mAdapter.notifyDataSetChanged();
                 }
-
-
             }
             Log.i(TAG, Integer.toString(mArtists.size()));
-
-
         }
     }
 
 
-    final int GET_ARTISTS = 1;
-    final int GET_TRACKS = 2;
 
     @Override
     public void onCreateOptionsMenu(final Menu menu, MenuInflater inflater) {
@@ -257,7 +251,7 @@ public class ArtistsFragment extends Fragment {
      */
     public interface OnListFragmentInteractionListener {
 
-        void onListFragmentInteraction(Artist item);
+        void onListFragmentInteraction(Singer item);
     }
 
 

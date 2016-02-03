@@ -8,7 +8,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
-import com.whitecloud.ron.musicplayer.artist.Artist;
+import com.whitecloud.ron.musicplayer.artist.Singer;
 
 
 import java.util.List;
@@ -20,10 +20,10 @@ import java.util.List;
  */
 public class MyArtistsRecyclerViewAdapter extends RecyclerView.Adapter<MyArtistsRecyclerViewAdapter.ViewHolder> {
 
-    private final List<Artist> mValues;
+    private final List<Singer> mValues;
     private final ArtistsFragment.OnListFragmentInteractionListener mListener;
 
-    public MyArtistsRecyclerViewAdapter(List<Artist> items, ArtistsFragment.OnListFragmentInteractionListener listener) {
+    public MyArtistsRecyclerViewAdapter(List<Singer> items, ArtistsFragment.OnListFragmentInteractionListener listener) {
         mValues = items;
         mListener = listener;
     }
@@ -70,7 +70,7 @@ public class MyArtistsRecyclerViewAdapter extends RecyclerView.Adapter<MyArtists
         public final View mView;
         public final TextView mIdView;
         public final ImageView mContentView;
-        public Artist mItem;
+        public Singer mItem;
 
         public ViewHolder(View view) {
             super(view);

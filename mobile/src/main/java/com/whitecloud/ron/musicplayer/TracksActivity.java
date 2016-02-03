@@ -1,15 +1,10 @@
 package com.whitecloud.ron.musicplayer;
 
-import android.content.Context;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import com.google.android.gms.appindexing.Action;
-import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.common.api.GoogleApiClient;
 
-import com.whitecloud.ron.musicplayer.track.Track;
+import com.whitecloud.ron.musicplayer.track.Song;
 
 
 import android.view.Menu;
@@ -90,10 +85,10 @@ public class TracksActivity extends AppCompatActivity implements TracksFragment.
     }
 
     @Override
-    public void onListFragmentInteraction(Track item) {
+    public void onListFragmentInteraction(Song item) {
         Intent i = new Intent(this, PlayerActivity.class);
         Bundle b = new Bundle();
-        b.putParcelable("com.whitecloud.ron.Track", item);
+        b.putParcelable("com.whitecloud.ron.Song", item);
         i.putExtras(b);
 
         startActivity(i);

@@ -3,12 +3,10 @@ package com.whitecloud.ron.musicplayer.track;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import com.whitecloud.ron.musicplayer.artist.Artist;
-
 /**
  * Created by ron on 19/01/16.
  */
-public class Track implements Parcelable {
+public class Song implements Parcelable {
 
     String mPreviewUrl;
     String mName;
@@ -16,7 +14,7 @@ public class Track implements Parcelable {
     String mSmallImageUrl;
     String mLargeImageUrl;
 
-    public Track(String previewUrl, String name, String album, String smallUrl, String largeUrl) {
+    public Song(String previewUrl, String name, String album, String smallUrl, String largeUrl) {
         mPreviewUrl =previewUrl;
         mName = name;
         mAlbum =album;
@@ -64,7 +62,7 @@ public class Track implements Parcelable {
         this.mLargeImageUrl = mLargeImageUrl;
     }
 
-    private Track(Parcel source) {
+    private Song(Parcel source) {
         mPreviewUrl = source.readString();
         mName = source.readString();
         mAlbum = source.readString();
@@ -87,15 +85,15 @@ public class Track implements Parcelable {
         dest.writeString(mLargeImageUrl);
     }
 
-    public final Creator<Track> CREATOR = new Creator<Track>() {
+    public final Creator<Song> CREATOR = new Creator<Song>() {
         @Override
-        public Track createFromParcel(Parcel source) {
-            return new Track(source);
+        public Song createFromParcel(Parcel source) {
+            return new Song(source);
         }
 
         @Override
-        public Track[] newArray(int size) {
-            return new Track[size];
+        public Song[] newArray(int size) {
+            return new Song[size];
         }
     };
 }

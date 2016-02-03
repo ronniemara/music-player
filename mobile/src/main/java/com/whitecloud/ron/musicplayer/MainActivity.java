@@ -4,22 +4,17 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.whitecloud.ron.musicplayer.artist.Artist;
-import com.whitecloud.ron.musicplayer.track.Track;
-
-import java.util.ResourceBundle;
+import com.whitecloud.ron.musicplayer.artist.Singer;
+import com.whitecloud.ron.musicplayer.track.Song;
 
 public class MainActivity extends AppCompatActivity
         implements ArtistsFragment.OnListFragmentInteractionListener,
@@ -71,11 +66,11 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onListFragmentInteraction(Artist item) {
+    public void onListFragmentInteraction(Singer item) {
         Log.i(TAG, "inside MAinActivity");
         Intent i = new Intent(this, TracksActivity.class);
         Bundle b = new Bundle();
-        b.putParcelable("com.whitecloud.ron.Artist", item);
+        b.putParcelable("com.whitecloud.ron.Singer", item);
         i.putExtras(b);
 
         startActivity(i);
@@ -122,7 +117,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onListFragmentInteraction(Track item) {
+    public void onListFragmentInteraction(Song item) {
         boolean dualPane = Resources.getSystem().getBoolean(R.bool.dualPane);
 
         if(dualPane) {
