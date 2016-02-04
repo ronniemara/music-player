@@ -3,9 +3,6 @@ package com.whitecloud.ron.musicplayer.track;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-/**
- * Created by ron on 19/01/16.
- */
 public class Song implements Parcelable {
 
     String mPreviewUrl;
@@ -85,7 +82,7 @@ public class Song implements Parcelable {
         dest.writeString(mLargeImageUrl);
     }
 
-    public final Creator<Song> CREATOR = new Creator<Song>() {
+    public static final Creator<Song> CREATOR = new Creator<Song>() {
         @Override
         public Song createFromParcel(Parcel source) {
             return new Song(source);

@@ -1,6 +1,10 @@
 package com.whitecloud.ron.musicplayer;
 
 import android.content.Context;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.DialogFragment;
@@ -8,6 +12,12 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.squareup.picasso.Picasso;
+import com.squareup.picasso.Target;
+import com.whitecloud.ron.musicplayer.track.Song;
 
 
 /**
@@ -21,12 +31,14 @@ import android.view.ViewGroup;
 public class PlayerFragment extends DialogFragment {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
+    private static final String SONG = "song";
+    private TextView textView;
+    private ImageView imageView;
+
 
     // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
+    private Song song;
+
 
     private OnFragmentInteractionListener mListener;
 
@@ -38,16 +50,15 @@ public class PlayerFragment extends DialogFragment {
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
+     * @param song Song to play.
      * @return A new instance of fragment PlayerFragment.
      */
     // TODO: Rename and change types and number of parameters
-    public static PlayerFragment newInstance(String param1, String param2) {
+    public static PlayerFragment newInstance(Song song) {
         PlayerFragment fragment = new PlayerFragment();
         Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
+        args.putParcelable(SONG, song);
+
         fragment.setArguments(args);
         return fragment;
     }
@@ -56,16 +67,32 @@ public class PlayerFragment extends DialogFragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
+            song = getArguments().getParcelable(SONG);
         }
+
+        Bundle extras = getActivity().getIntent().getExtras();
+        song = extras.getParcelable("com.whitecloud.ron.Song");
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_song_player, container, false);
+        View view = inflater.inflate(R.layout.fragment_song_player, container, false);
+
+        textView = (TextView) view.findViewById(R.id.Player_textview);
+        //imageView = (ImageView) view.findViewById(R.id.Player_image_view);
+
+
+        String name = song.getmName();
+        String album = song.getmAlbum();
+        Resources res= getActivity().getResources();
+
+        //String text = String.format(res.getString(R.string.song_details), name, album);
+
+        textView.setText(name);
+       // Picasso.with(getActivity()).load(song.getmLargeImageUrl()).into(imageView);
+        return view;
     }
 
     // TODO: Rename method, update argument and hook method into UI event
