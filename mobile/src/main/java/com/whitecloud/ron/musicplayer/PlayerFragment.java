@@ -32,7 +32,8 @@ public class PlayerFragment extends DialogFragment {
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String SONG = "song";
-    private TextView textView;
+    private TextView name_textView;
+    private TextView album_textview;
     private ImageView imageView;
 
 
@@ -80,18 +81,27 @@ public class PlayerFragment extends DialogFragment {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_song_player, container, false);
 
-        textView = (TextView) view.findViewById(R.id.Player_textview);
-        //imageView = (ImageView) view.findViewById(R.id.Player_image_view);
-
-
         String name = song.getmName();
+
         String album = song.getmAlbum();
-        Resources res= getActivity().getResources();
+
+        name_textView = (TextView) view.findViewById(R.id.Player_song_name_textview);
+        name_textView.setText(name);
+
+        album_textview = (TextView) view.findViewById(R.id.Player_song_album_textview);
+        album_textview.setText(album);
+
+
+        imageView = (ImageView) view.findViewById(R.id.Player_image_view);
+        Picasso.with(getActivity()).load(song.getmLargeImageUrl())
+                .centerCrop().fit().into(imageView);
+
+
+//        Resources res= getActivity().getResources();
 
         //String text = String.format(res.getString(R.string.song_details), name, album);
 
-        textView.setText(name);
-       // Picasso.with(getActivity()).load(song.getmLargeImageUrl()).into(imageView);
+
         return view;
     }
 
