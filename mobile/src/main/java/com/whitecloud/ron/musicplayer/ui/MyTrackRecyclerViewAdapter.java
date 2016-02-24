@@ -1,4 +1,4 @@
-package com.whitecloud.ron.musicplayer;
+package com.whitecloud.ron.musicplayer.ui;
 
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -8,7 +8,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
-import com.whitecloud.ron.musicplayer.TracksFragment.OnListFragmentInteractionListener;
+import com.whitecloud.ron.musicplayer.R;
+import com.whitecloud.ron.musicplayer.ui.TracksFragment.OnListFragmentInteractionListener;
 
 import com.whitecloud.ron.musicplayer.track.Song;
 

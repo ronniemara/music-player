@@ -1,4 +1,4 @@
-package com.whitecloud.ron.musicplayer;
+package com.whitecloud.ron.musicplayer.ui;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -26,6 +26,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.whitecloud.ron.musicplayer.MusicService;
+import com.whitecloud.ron.musicplayer.MyArtistsRecyclerViewAdapter;
+import com.whitecloud.ron.musicplayer.R;
 import com.whitecloud.ron.musicplayer.artist.Singer;
 
 import java.util.ArrayList;
@@ -184,7 +187,7 @@ public class ArtistsFragment extends Fragment {
 
     }
 
-    static String  getQuery(Message reqMessage) {
+    public static String  getQuery(Message reqMessage) {
         return reqMessage.getData().getString("query");
     }
 

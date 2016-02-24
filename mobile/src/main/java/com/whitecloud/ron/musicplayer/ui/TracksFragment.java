@@ -1,4 +1,4 @@
-package com.whitecloud.ron.musicplayer;
+package com.whitecloud.ron.musicplayer.ui;
 
 import android.content.ComponentName;
 import android.content.Context;
@@ -20,6 +20,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 
+import com.whitecloud.ron.musicplayer.MusicService;
+import com.whitecloud.ron.musicplayer.R;
 import com.whitecloud.ron.musicplayer.artist.Singer;
 import com.whitecloud.ron.musicplayer.track.Song;
 
@@ -129,7 +131,7 @@ public class TracksFragment extends Fragment {
         public void onServiceConnected(ComponentName name, IBinder service) {
             Log.i(TAG, "inside TracksFragment");
             mReqMessengerRef = new Messenger(service);
-            if(mReqMessengerRef != null) {
+
                 Message message = Message.obtain();
                 message.replyTo = mReplyMessenger;
                 message.what = GET_TRACKS;
@@ -143,7 +145,7 @@ public class TracksFragment extends Fragment {
                     e.printStackTrace();
                 }
 
-            }
+
             isBound = true;
         }
 

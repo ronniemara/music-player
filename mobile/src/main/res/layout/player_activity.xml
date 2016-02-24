@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
-    tools:context="com.whitecloud.ron.musicplayer.PlayerActivity">
+    tools:context=".ui.PlayerActivity">
 
     <android.support.design.widget.AppBarLayout
         android:layout_width="match_parent"
@@ -25,6 +25,6 @@
         android:id="@+id/tracks_fragment"
         android:layout_height="match_parent"
         android:layout_width="match_parent"
-        android:name="com.whitecloud.ron.musicplayer.PlayerFragment"
+        android:name="com.whitecloud.ron.musicplayer.ui.PlayerFragment"
         tools:layout="@layout/fragment_song_player" />
 </android.support.design.widget.CoordinatorLayout>

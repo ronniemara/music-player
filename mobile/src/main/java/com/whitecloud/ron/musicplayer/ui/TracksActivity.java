@@ -1,9 +1,10 @@
-package com.whitecloud.ron.musicplayer;
+package com.whitecloud.ron.musicplayer.ui;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 
+import com.whitecloud.ron.musicplayer.R;
 import com.whitecloud.ron.musicplayer.track.Song;
 
 
@@ -11,10 +12,8 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 
-/**
- * Created by ron on 19/01/16.
- */
-public class TracksActivity extends AppCompatActivity implements TracksFragment.OnListFragmentInteractionListener{
+
+public class TracksActivity extends AppCompatActivity implements TracksFragment.OnListFragmentInteractionListener {
 //    private GoogleApiClient client;
 
     @Override

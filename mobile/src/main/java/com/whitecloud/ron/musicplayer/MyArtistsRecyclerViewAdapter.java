@@ -9,6 +9,7 @@ import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
 import com.whitecloud.ron.musicplayer.artist.Singer;
+import com.whitecloud.ron.musicplayer.ui.ArtistsFragment;
 
 
 import java.util.List;

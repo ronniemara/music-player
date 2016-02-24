@@ -1,4 +1,4 @@
-package com.whitecloud.ron.musicplayer;
+package com.whitecloud.ron.musicplayer.ui;
 
 import android.content.Intent;
 import android.content.res.Resources;
@@ -13,12 +13,13 @@ import android.view.MenuItem;
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.whitecloud.ron.musicplayer.R;
 import com.whitecloud.ron.musicplayer.artist.Singer;
 import com.whitecloud.ron.musicplayer.track.Song;
 
 public class MainActivity extends AppCompatActivity
         implements ArtistsFragment.OnListFragmentInteractionListener,
-                    TracksFragment.OnListFragmentInteractionListener{
+        TracksFragment.OnListFragmentInteractionListener {
 
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.

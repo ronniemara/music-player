@@ -6,4 +6,8 @@
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="song_details" >%1$s + \n + %2$2s</string>
     <string name="song_image">Song image</string>
+    <string name="random_queue_title">Random music</string>
+    <string name="error_no_metadata">Unable to retrieve metadata.</string>
+    <string name="favorite">Favorite</string>
+    <string name="pause">pause</string>
 </resources>

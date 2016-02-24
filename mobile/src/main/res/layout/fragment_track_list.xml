@@ -10,5 +10,5 @@
     android:layout_marginLeft="16dp"
     android:layout_marginRight="16dp"
     app:layoutManager="LinearLayoutManager"
-    tools:context="com.whitecloud.ron.musicplayer.TracksFragment"
+    tools:context=".ui.TracksFragment"
     tools:listitem="@layout/fragment_track_one_item" />

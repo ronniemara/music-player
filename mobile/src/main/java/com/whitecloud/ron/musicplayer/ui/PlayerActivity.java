@@ -1,17 +1,14 @@
-package com.whitecloud.ron.musicplayer;
+package com.whitecloud.ron.musicplayer.ui;
 
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
-import com.google.android.gms.appindexing.Action;
-import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.whitecloud.ron.musicplayer.R;
 
-/**
- * Created by ron on 19/01/16.
- */
+
 public class PlayerActivity extends AppCompatActivity implements PlayerFragment.OnFragmentInteractionListener {
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
