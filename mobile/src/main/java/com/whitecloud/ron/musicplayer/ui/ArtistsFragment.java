@@ -51,7 +51,6 @@ public class ArtistsFragment extends Fragment {
 
     private final String TAG = ArtistsFragment.class.getSimpleName();
 
-
     private boolean isBound = false;
     private SearchView mSearchView;
 
@@ -62,11 +61,6 @@ public class ArtistsFragment extends Fragment {
     private Messenger mReqMessengerRef;
     private Messenger mReplyMessenger;
     private ReplyHandler mReplyHandler;
-
-
-    final int GET_ARTISTS = 1;
-    final int GET_TRACKS = 2;
-
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -116,8 +110,6 @@ public class ArtistsFragment extends Fragment {
         getActivity().bindService(intent, mSrvcCxn, Context.BIND_AUTO_CREATE);
 
         setHasOptionsMenu(true);
-
-
     }
 
     class ReplyHandler extends android.os.Handler {
@@ -157,7 +149,7 @@ public class ArtistsFragment extends Fragment {
 
                 if (isConnected) {
                   Message message = Message.obtain();
-                    message.what = GET_ARTISTS;
+                    message.what = MusicService.GET_ARTISTS;
                     message.replyTo = mReplyMessenger;
                     Bundle bundle = new Bundle();
                     bundle.putString("query", query );

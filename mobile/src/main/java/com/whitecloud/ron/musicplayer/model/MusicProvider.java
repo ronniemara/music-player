@@ -295,14 +295,13 @@ public class MusicProvider {
         }
         List<Artist> artistList = artists.artists.items;
 
-        if(artists != null) {
+        if(!artistList.isEmpty()) {
             for (int i = 0; i < artistList.size(); i++) {
                 Artist artist   = artistList.get(i);
                 String imageUrl = artist.images.isEmpty() ? null : artist.images.get(0).url;
                 mArtists.add(new Singer(artist.name, artist.id, imageUrl));
             }
         }
-
     }
 
     private synchronized void retrieveMedia(String spotifyId) {
@@ -355,7 +354,6 @@ public class MusicProvider {
 //                JSONArray tracks = jsonObj.getJSONArray(JSON_MUSIC);
                 if (trackList != null) {
                     for (int j = 0; j < trackList.size(); j++) {
-
                         Track track = trackList.get(j);
                         MediaMetadataCompat item = new MediaMetadataCompat.Builder()
                                 .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID,  track.id)

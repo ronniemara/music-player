@@ -11,6 +11,7 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
+import android.os.ResultReceiver;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
@@ -55,24 +56,23 @@ import kaaes.spotify.webapi.android.SpotifyService;
 import retrofit.RetrofitError;
 
 
-public class MusicService extends Service implements Playback.Callback,
-        MusicProvider.Callback, MediaController.MediaPlayerControl {
+public class MusicService extends Service implements
+        MusicProvider.Callback {
 
     private final static String TAG = MusicService.class.getSimpleName();
     private Messenger mReqMessenger;
     private List<Singer>    mArtists = new ArrayList<>();
     private ArrayList<Song> mSongs   = new ArrayList<>();
 
-    private Handler mRequestHandler;
-    private final DelayedStopHandler mDelayedStopHandler = new DelayedStopHandler(this);
+    private Handler                            mRequestHandler;
+    private final DelayedStopHandler           mDelayedStopHandler = new DelayedStopHandler(this);
     private MediaSessionCompat                 mMediaSession;
     private List<MediaDescriptionCompat>       queueItemList;
     private MediaMetadataCompat                mMetaData;
     private List<MediaSessionCompat.QueueItem> mPlayingQueue;
+
     // Action to thumbs up a media item
     private static final String CUSTOM_ACTION_THUMBS_UP = "com.whitecloud.ron.musicplayer.THUMBS_UP";
-
-
     // The action of the incoming Intent indicating that it contains a command
     // to be executed (see {@link #onStartCommand})
     public static final  String ACTION_CMD = "com.whitecloud.ron.musicplayer.ACTION_CMD";
@@ -87,10 +87,11 @@ public class MusicService extends Service implements Playback.Callback,
 
     private int mState = PlaybackStateCompat.STATE_NONE;
 
-    final int GET_ARTISTS   = 1;
-    final int GET_TRACKS    = 2;
-    final int GET_TRACKS_OK = 3;
-    final int GET_TOKEN     = 7;
+    public static final int GET_ARTISTS   = 0;
+    public static final int GET_TRACKS    = 1;
+    public static final int GET_TRACKS_OK = 2;
+    public static final int GET_TOKEN     = 3;
+
 //    final int ERROR_RESPONSE =3;
 
     private LocalPlayback mPlayback;
@@ -101,6 +102,9 @@ public class MusicService extends Service implements Playback.Callback,
     private SpotifyService            spotify;
 
 
+    public LocalPlayback getmPlayback() {
+        return mPlayback;
+    }
 
     @Override
     public void onCreate() {
@@ -133,6 +137,7 @@ public class MusicService extends Service implements Playback.Callback,
 
         //the playing queue
         mPlayingQueue = new ArrayList<>();
+        mPlayback = new LocalPlayback(this, mMusicProvider);
     }
 
 
@@ -360,7 +365,7 @@ public class MusicService extends Service implements Playback.Callback,
             final Messenger replyMessenger = msg.replyTo;
 
             switch (msg.what) {
-                case GET_ARTISTS: {
+                case MusicService.GET_ARTISTS: {
                     final String query = ArtistsFragment.getQuery(msg);
                     mExecutor.execute(new Runnable() {
                         @Override
@@ -377,7 +382,7 @@ public class MusicService extends Service implements Playback.Callback,
                 }
 
                 break;
-                case GET_TRACKS: {
+                case MusicService.GET_TRACKS: {
                     final Singer singer = TracksFragment.getSinger(msg);
                     mExecutor.execute(new Runnable() {
                         @Override
@@ -392,7 +397,7 @@ public class MusicService extends Service implements Playback.Callback,
                     });
                 }
 
-                case GET_TOKEN: {
+                case MusicService.GET_TOKEN: {
                     mExecutor.execute(new Runnable() {
                         @Override
                         public void run() {
@@ -442,6 +447,7 @@ public class MusicService extends Service implements Playback.Callback,
 
     void onGetTopTracks(String spotifyId, Messenger replyHandler) throws RetrofitError, IOException {
         mMusicProvider.retrieveMediaAsync(this, spotifyId, replyHandler);
+        updatePlaybackState(null);
     }
 
 
@@ -591,89 +597,113 @@ public class MusicService extends Service implements Playback.Callback,
         super.onDestroy();
     }
 
-    @Override
-    public void onCompletion() {
+    MediaSessionCompat.Callback mSessionCallback = new MediaSessionCompat.Callback() {
+        @Override
+        public boolean onMediaButtonEvent(Intent mediaButtonEvent) {
+            return super.onMediaButtonEvent(mediaButtonEvent);
+        }
 
-    }
+        @Override
+        public void onPlay() {
+            super.onPlay();
+        }
 
-    @Override
-    public void onPlaybackStatusChanged(int state) {
+        @Override
+        public void onPlayFromMediaId(String mediaId, Bundle extras) {
+            super.onPlayFromMediaId(mediaId, extras);
+        }
 
-    }
+        @Override
+        public void onPlayFromSearch(String query, Bundle extras) {
+            super.onPlayFromSearch(query, extras);
+        }
 
-    @Override
-    public void onError(String error) {
+        @Override
+        public void onPlayFromUri(Uri uri, Bundle extras) {
+            super.onPlayFromUri(uri, extras);
+        }
 
-    }
+        @Override
+        public void onSkipToQueueItem(long id) {
+            super.onSkipToQueueItem(id);
+        }
 
-    @Override
-    public void onMetadataChanged(String mediaId) {
+        @Override
+        public void onPause() {
+            super.onPause();
+        }
 
-    }
+        @Override
+        public void onSkipToNext() {
+            super.onSkipToNext();
+        }
+
+        @Override
+        public void onSkipToPrevious() {
+            super.onSkipToPrevious();
+        }
+
+        @Override
+        public void onFastForward() {
+            super.onFastForward();
+        }
+
+        @Override
+        public void onRewind() {
+            super.onRewind();
+        }
+
+        @Override
+        public void onStop() {
+            super.onStop();
+        }
+
+        @Override
+        public void onSeekTo(long pos) {
+            super.onSeekTo(pos);
+        }
+
+        @Override
+        public void onSetRating(RatingCompat rating) {
+            super.onSetRating(rating);
+        }
+
+        @Override
+        public void onCustomAction(String action, Bundle extras) {
+            super.onCustomAction(action, extras);
+        }
+
+        @Override
+        public void onCommand(String command, Bundle extras, ResultReceiver cb) {
+            super.onCommand(command, extras, cb);
+        }
+    };
+
+
+   Playback.Callback mPlaybackCallback = new Playback.Callback() {
+       @Override
+       public void onCompletion() {
+
+       }
+
+       @Override
+       public void onPlaybackStatusChanged(int state) {
+
+       }
+
+       @Override
+       public void onError(String error) {
+
+       }
+
+       @Override
+       public void onMetadataChanged(String mediaId) {
+
+       }
+   };
 
 
 
-    /*
-    The MediaController.MediaPlayerControl implementation
-     */
 
-    @Override
-    public void start() {
-        //initialize player
-        mPlayback = new LocalPlayback(this, mMusicProvider);
-        mPlayback.setState(PlaybackStateCompat.STATE_NONE);
-        mPlayback.setCallback(this);
-        mPlayback.start();
-    }
-
-    @Override
-    public void pause() {
-        mPlayback.pause();
-    }
-
-    @Override
-    public int getDuration() {
-        return 0;
-    }
-
-    @Override
-    public int getCurrentPosition() {
-        return mPlayback.getCurrentStreamPosition();
-    }
-
-    @Override
-    public void seekTo(int pos) {
-        mPlayback.seekTo(pos);
-    }
-
-    @Override
-    public boolean isPlaying() {
-        return mPlayback != null && mPlayback.isPlaying();
-    }
-
-    @Override
-    public int getBufferPercentage() {
-        return 0;
-    }
-
-    @Override
-    public boolean canPause() {
-        return false;
-    }
-
-    @Override
-    public boolean canSeekBackward() {
-        return false;
-    }
-
-    @Override
-    public boolean canSeekForward() {
-        return false;
-    }
-
-    @Override
-    public int getAudioSessionId() {
-        return 0;
-    }
 
 }

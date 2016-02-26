@@ -53,9 +53,6 @@ public class TracksFragment extends Fragment {
     private ReplyHandler mReplyHandler;
     private boolean isBound;
 
-    final int GET_ARTISTS = 1;
-    final int GET_TRACKS = 2;
-    final int GET_TRACKS_OK = 3;
 
     private final String TAG = TracksFragment.class.getSimpleName();
 
@@ -70,7 +67,7 @@ public class TracksFragment extends Fragment {
         @Override
         public void handleMessage(Message msg) {
             switch(msg.what) {
-                case GET_TRACKS_OK : {
+                case MusicService.GET_TRACKS_OK : {
                     ArrayList<Song> songs = MusicService.getSongs(msg);
 
                     mSongs.clear();
@@ -134,7 +131,7 @@ public class TracksFragment extends Fragment {
 
                 Message message = Message.obtain();
                 message.replyTo = mReplyMessenger;
-                message.what = GET_TRACKS;
+                message.what = MusicService.GET_TRACKS;
                 Bundle data = new Bundle();
                 data.putParcelable("com.whitecloud.ron.mArtist", mArtist);
                 message.setData(data);

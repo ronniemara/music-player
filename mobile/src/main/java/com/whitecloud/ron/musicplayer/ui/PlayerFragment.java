@@ -14,6 +14,7 @@ import android.os.RemoteException;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.media.MediaMetadataCompat;
+import android.support.v4.media.RatingCompat;
 import android.support.v4.media.session.MediaControllerCompat;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
@@ -41,24 +42,22 @@ import java.util.List;
  * Use the {@link PlayerFragment#newInstance} factory method to
  * create an instance of this fragment.
  */
-public class PlayerFragment extends DialogFragment  {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
+public class PlayerFragment extends DialogFragment {
+
     private static final String SONG = "song";
-    private  View mView;
-    private TextView name_textView;
-    private TextView album_textview;
+    private View      mView;
+    private TextView  name_textView;
+    private TextView  album_textview;
     private ImageView imageView;
 
-    private MediaControllerCompat mMediaControllerSession;
-    private MediaController mMediaControllerWidget;
-    private MediaSessionCompat.Token mToken;
-    private Handler mReplyHandler;
-    private Messenger mReqMessengerRef;
+    private MediaControllerCompat                   mMediaControllerSession;
+    private MediaControllerCompat.TransportControls mTransportControls;
+    private MediaController                         mMediaControllerWidget;
+    private MediaSessionCompat.Token                mToken;
+    private Handler                                 mReplyHandler;
+    private Messenger                               mReqMessengerRef;
 
-    private final static  int GET_TOKEN = 7;
-    // TODO: Rename and change types of parameters
-    private Song song;
+    private Song                          song;
     private OnFragmentInteractionListener mListener;
     private final String TAG = MusicService.class.getSimpleName();
 
@@ -70,13 +69,13 @@ public class PlayerFragment extends DialogFragment  {
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      *
-     * @param song Song to play.
+     * @param song song to play
      * @return A new instance of fragment PlayerFragment.
      */
-    // TODO: Rename and change types and number of parameters
+
     public static PlayerFragment newInstance(Song song) {
         PlayerFragment fragment = new PlayerFragment();
-        Bundle args = new Bundle();
+        Bundle         args     = new Bundle();
         args.putParcelable(SONG, song);
 
         fragment.setArguments(args);
@@ -89,7 +88,7 @@ public class PlayerFragment extends DialogFragment  {
             mReqMessengerRef = new Messenger(service);
             Message message = Message.obtain();
             message.replyTo = new Messenger(mReplyHandler);
-            message.what    = GET_TOKEN;
+            message.what = MusicService.GET_TOKEN;
 
             try {
                 mReqMessengerRef.send(message);
@@ -108,24 +107,28 @@ public class PlayerFragment extends DialogFragment  {
         @Override
         public void handleMessage(Message msg) {
 
-          switch(msg.what) {
-              case GET_TOKEN : {
-                  mToken = MusicService.getToken(msg);
-                  try {
-                      mMediaControllerSession = new MediaControllerCompat(PlayerFragment.this.getActivity(), mToken );
-                      mMediaControllerSession.registerCallback(new ControllerSessionCallback());
-                      Log.i(TAG, mMediaControllerSession.getSessionToken().toString());
+            switch (msg.what) {
+                case MusicService.GET_TOKEN: {
+                    mToken = MusicService.getToken(msg);
+                  onTokenReceived(mToken);
+                }
+            }
+        }
+    }
 
-                      mMediaControllerWidget = new MediaController(getActivity());
-                      mMediaControllerWidget.setAnchorView(mView);
-                      mMediaControllerWidget.setMediaPlayer(new MusicService());
-                      mMediaControllerWidget.setEnabled(true);
-                      mMediaControllerWidget.show();
-                  } catch (RemoteException e) {
-                      e.printStackTrace();
-                  }
-              }
-          }
+    private void onTokenReceived(MediaSessionCompat.Token mToken) {
+        try {
+            mMediaControllerSession = new MediaControllerCompat(PlayerFragment.this.getActivity(), mToken);
+            mTransportControls = mMediaControllerSession.getTransportControls();
+            mMediaControllerSession.registerCallback(new ControllerSessionCallback());
+            //Log.i(TAG, mMediaControllerSession.getSessionToken().toString());
+            mMediaControllerWidget = new MediaController(getActivity());
+            mMediaControllerWidget.setAnchorView(mView);
+            mMediaControllerWidget.setMediaPlayer(mediaPlayerControl);
+            mMediaControllerWidget.setEnabled(true);
+            mMediaControllerWidget.show();
+        } catch (RemoteException e) {
+            e.printStackTrace();
         }
     }
 
@@ -150,6 +153,7 @@ public class PlayerFragment extends DialogFragment  {
         song = extras.getParcelable("com.whitecloud.ron.Song");
 
         mReplyHandler = new ReplyHandler();
+
     }
 
     @Override
@@ -158,7 +162,7 @@ public class PlayerFragment extends DialogFragment  {
         // Inflate the layout for this fragment
         mView = inflater.inflate(R.layout.fragment_song_player, container, false);
 
-        String name = song.getmName();
+        String name  = song.getmName();
         String album = song.getmAlbum();
 
         name_textView = (TextView) mView.findViewById(R.id.Player_song_name_textview);
@@ -261,5 +265,64 @@ public class PlayerFragment extends DialogFragment  {
         // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
+
+    private MediaController.MediaPlayerControl mediaPlayerControl = new MediaController.MediaPlayerControl() {
+        @Override
+        public void start() {
+            mTransportControls.play();
+        }
+
+        @Override
+        public void pause() {
+            mTransportControls.pause();
+        }
+
+        @Override
+        public int getDuration() {
+            //return mMediaControllerSession.getMetadata();
+            return 0;
+        }
+
+        @Override
+        public int getCurrentPosition() {
+            return (int) mMediaControllerSession.getPlaybackState().getPosition();
+        }
+
+        @Override
+        public void seekTo(int pos) {
+            mTransportControls.seekTo(pos);
+        }
+
+        @Override
+        public boolean isPlaying() {
+            return mMediaControllerSession.getPlaybackState().getState() == PlaybackStateCompat.STATE_PLAYING;
+        }
+
+        @Override
+        public int getBufferPercentage() {
+            return (int) mMediaControllerSession.getPlaybackState().getBufferedPosition();
+        }
+
+        @Override
+        public boolean canPause() {
+           return ((mMediaControllerSession.getPlaybackState().getActions() & PlaybackStateCompat.ACTION_PAUSE) != 0);
+        }
+
+        @Override
+        public boolean canSeekBackward() {
+            return ((mMediaControllerSession.getPlaybackState().getActions() & PlaybackStateCompat.ACTION_SEEK_TO) != 0);
+        }
+
+        @Override
+        public boolean canSeekForward() {
+            return ((mMediaControllerSession.getPlaybackState().getActions() & PlaybackStateCompat.ACTION_SEEK_TO) != 0);
+        }
+
+        @Override
+        public int getAudioSessionId() {
+            return 0;
+        }
+    };
+
 
 }
