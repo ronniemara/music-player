@@ -15,15 +15,6 @@
             <option value="$PROJECT_DIR$/wear" />
           </set>
         </option>
-        <option name="myModules">
-          <set>
-            <option value="$PROJECT_DIR$" />
-            <option value="$PROJECT_DIR$/CastCompanionLibrary-debug-2.6.1" />
-            <option value="$PROJECT_DIR$/mobile" />
-            <option value="$PROJECT_DIR$/tv" />
-            <option value="$PROJECT_DIR$/wear" />
-          </set>
-        </option>
       </GradleProjectSettings>
     </option>
   </component>

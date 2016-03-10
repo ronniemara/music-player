@@ -10,6 +10,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Messenger;
+import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.os.ResultReceiver;
 import android.os.SystemClock;
@@ -101,13 +102,63 @@ public class MusicService extends Service implements
     private NotificationManagerCompat mMediaNotificationManager;
     private boolean                   mServiceStarted;
     private SpotifyService            spotify;
+    ExecutorService mExecutor;
+    private final int MAX_FIXED_THREAD_POOL = 4;
+    List<Singer> singers;
+
+
+    final RemoteCallbackList<IMusicServiceCallback> mCallbacks
+            = new RemoteCallbackList<IMusicServiceCallback>();
 
 
     public LocalPlayback getmPlayback() {
         return mPlayback;
     }
 
-    @Override
+    Handler mHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            switch (msg.what) {
+                case GET_ARTISTS : {
+                    // Broadcast to all clients the new value.
+                    final int N = mCallbacks.beginBroadcast();
+                    for (int i=0; i<N; i++) {
+                        try {
+                            mCallbacks.getBroadcastItem(i).onGetArtists(singers);
+                        } catch (RemoteException e) {
+                            // The RemoteCallbackList will take care of removing
+                            // the dead object for us.
+                        }
+                    }
+                    mCallbacks.finishBroadcast();
+                }
+            }
+        }
+    };
+
+
+    IMusicService.Stub iMusicService = new IMusicService.Stub() {
+        @Override
+        public void getArtists(final String query) throws RemoteException {
+
+            mExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    singers = mMusicProvider.searchArtists(query);
+                    mHandler.sendMessage(mHandler.obtainMessage(GET_ARTISTS));
+
+                }
+            });
+
+        }
+        public void registerCallback(IMusicServiceCallback cb) {
+            if (cb != null) mCallbacks.register(cb);
+        }
+        public void unregisterCallback(IMusicServiceCallback cb) {
+            if (cb != null) mCallbacks.unregister(cb);
+        }
+
+    };
     public void onCreate() {
 
         super.onCreate();
@@ -124,6 +175,7 @@ public class MusicService extends Service implements
 
         //where will get the music
         mMusicProvider = new MusicProvider();
+        mExecutor = Executors.newFixedThreadPool(MAX_FIXED_THREAD_POOL);
 
 //        Context context = getApplicationContext();
 //        Intent intent = new Intent(context, NowPlayingActivity.class);
@@ -568,7 +620,7 @@ public class MusicService extends Service implements
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return mReqMessenger.getBinder();
+        return iMusicService;
     }
 
     /**

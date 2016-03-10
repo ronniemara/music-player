@@ -26,12 +26,15 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.whitecloud.ron.musicplayer.IMusicService;
+import com.whitecloud.ron.musicplayer.IMusicServiceCallback;
 import com.whitecloud.ron.musicplayer.MusicService;
 import com.whitecloud.ron.musicplayer.MyArtistsRecyclerViewAdapter;
 import com.whitecloud.ron.musicplayer.R;
 import com.whitecloud.ron.musicplayer.artist.Singer;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -58,8 +61,7 @@ public class ArtistsFragment extends Fragment {
     private RecyclerView.Adapter mAdapter;
 
 
-    private Messenger mReqMessengerRef;
-    private Messenger mReplyMessenger;
+   private IMusicService mMusicService;
     private ReplyHandler mReplyHandler;
 
     /**
@@ -84,18 +86,34 @@ public class ArtistsFragment extends Fragment {
         public void onServiceConnected(ComponentName name, IBinder service) {
 
             Log.i(TAG, "onServiceConnected");
-            mReqMessengerRef = new Messenger(service);
+            mMusicService= IMusicService.Stub.asInterface(service);
+
+            try {
+                mMusicService.registerCallback(mCallback);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
             isBound = true;
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
             isBound = false;
-            mReqMessengerRef = null;
+            mMusicService = null;
         }
     };
 
-    @Override
+    private IMusicServiceCallback.Stub mCallback = new IMusicServiceCallback.Stub() {
+        @Override
+        public  void onGetArtists(List<Singer> singers) throws RemoteException {
+            Message message = mReplyHandler.obtainMessage(MusicService.GET_ARTISTS);
+            Bundle data = new Bundle();
+            data.putParcelableArrayList("singers", (ArrayList)singers);
+            message.setData(data);
+            mReplyHandler.sendMessage(message);
+        }
+    };
+
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
@@ -105,7 +123,7 @@ public class ArtistsFragment extends Fragment {
 
         mArtists = new ArrayList<>();
         mReplyHandler = new ReplyHandler();
-        mReplyMessenger = new Messenger(mReplyHandler);
+
         Intent intent = new Intent(getActivity(), MusicService.class);
         getActivity().bindService(intent, mSrvcCxn, Context.BIND_AUTO_CREATE);
 
@@ -116,24 +134,24 @@ public class ArtistsFragment extends Fragment {
         @Override
         public void handleMessage(Message msg) {
 
-            ArrayList<Singer> artists = MusicService.artists(msg);
+            switch (msg.what) {
 
-            mArtists.clear();
+                case MusicService.GET_ARTISTS: {
+                    mArtists.clear();
 
-            for(int i=0; i< artists.size(); i++) {
-                Singer artist = artists.get(i);
-                if(!artists.isEmpty()) {
-                    mArtists.add(new Singer(artist.getmName(), artist.getmSpotifyId(), artist.getmImageUrl()));
-                    mAdapter.notifyDataSetChanged();
+                    mArtists.addAll((Collection)msg.getData().getParcelableArrayList("singers"));
+                    ArtistsFragment.this.mAdapter.notifyDataSetChanged();
+//                    for (Singer singer : mArtists) {
+//                        Log.d(TAG, singer.getmName());
+//                    }
+                    //Log.i(TAG, Integer.toString(mArtists.size()));
                 }
             }
-            Log.i(TAG, Integer.toString(mArtists.size()));
         }
     }
 
 
 
-    @Override
     public void onCreateOptionsMenu(final Menu menu, MenuInflater inflater) {
 
         getActivity().getMenuInflater().inflate(R.menu.artist_search, menu);
@@ -148,15 +166,8 @@ public class ArtistsFragment extends Fragment {
                 boolean isConnected = isConnected();
 
                 if (isConnected) {
-                  Message message = Message.obtain();
-                    message.what = MusicService.GET_ARTISTS;
-                    message.replyTo = mReplyMessenger;
-                    Bundle bundle = new Bundle();
-                    bundle.putString("query", query );
-                    message.setData(bundle);
-
                     try {
-                        mReqMessengerRef.send(message);
+                        mMusicService.getArtists(query);
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
