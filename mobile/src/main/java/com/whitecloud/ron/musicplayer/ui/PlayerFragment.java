@@ -324,5 +324,9 @@ public class PlayerFragment extends DialogFragment {
         }
     };
 
-
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        getActivity().unbindService(mServiceConnection);
+    }
 }

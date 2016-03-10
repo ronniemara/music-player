@@ -31,6 +31,7 @@ import android.text.TextUtils;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.MediaController;
+import android.widget.Toast;
 
 import com.whitecloud.ron.musicplayer.artist.Singer;
 import com.whitecloud.ron.musicplayer.model.MusicProvider;
@@ -363,6 +364,10 @@ public class MusicService extends Service implements
         @Override
         public void handleMessage(final Message msg) {
             final Messenger replyMessenger = msg.replyTo;
+                if(replyMessenger == null) {
+                    return ;
+                }
+
 
             switch (msg.what) {
                 case MusicService.GET_ARTISTS: {
