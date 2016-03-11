@@ -2,7 +2,6 @@ package com.whitecloud.ron.musicplayer;
 
 import android.app.Service;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -14,7 +13,6 @@ import android.os.RemoteCallbackList;
 import android.os.RemoteException;
 import android.os.ResultReceiver;
 import android.os.SystemClock;
-import android.preference.PreferenceManager;
 import android.support.annotation.Nullable;
 
 
@@ -29,30 +27,23 @@ import android.support.v4.media.session.MediaButtonReceiver;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.KeyEvent;
-import android.widget.MediaController;
-import android.widget.Toast;
 
 import com.whitecloud.ron.musicplayer.artist.Singer;
 import com.whitecloud.ron.musicplayer.model.MusicProvider;
 import com.whitecloud.ron.musicplayer.track.Song;
-import com.whitecloud.ron.musicplayer.ui.ArtistsFragment;
 
-import com.whitecloud.ron.musicplayer.ui.TracksFragment;
 import com.whitecloud.ron.musicplayer.utils.LogHelper;
 import com.whitecloud.ron.musicplayer.utils.MediaIDHelper;
 import com.whitecloud.ron.musicplayer.utils.QueueHelper;
 import com.whitecloud.ron.musicplayer.utils.WearHelper;
 
-import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
 
 import retrofit.RetrofitError;
@@ -72,6 +63,7 @@ public class MusicService extends Service implements
     private List<MediaDescriptionCompat>       queueItemList;
     private MediaMetadataCompat                mMetaData;
     private List<MediaSessionCompat.QueueItem> mPlayingQueue;
+    private MediaSessionCompat.Token token;
 
     // Action to thumbs up a media item
     private static final String CUSTOM_ACTION_THUMBS_UP = "com.whitecloud.ron.musicplayer.THUMBS_UP";
@@ -110,6 +102,17 @@ public class MusicService extends Service implements
     final RemoteCallbackList<IMusicServiceCallback> mCallbacks
             = new RemoteCallbackList<IMusicServiceCallback>();
 
+    @Override
+    public void onMusicCatalogReady(boolean success, List<Song> songs) {
+        if(success) {
+            mArtists = (List) songs;
+            Bundle data = new Bundle();
+            data.putParcelableArrayList("tracks", (ArrayList) mArtists);
+            Message msg = mHandler.obtainMessage(MusicService.GET_TRACKS);
+            msg.setData(data);
+            mHandler.sendMessage(msg);
+        }
+    }
 
     public LocalPlayback getmPlayback() {
         return mPlayback;
@@ -125,6 +128,33 @@ public class MusicService extends Service implements
                     for (int i=0; i<N; i++) {
                         try {
                             mCallbacks.getBroadcastItem(i).onGetArtists(singers);
+                        } catch (RemoteException e) {
+                            // The RemoteCallbackList will take care of removing
+                            // the dead object for us.
+                        }
+                    }
+                    mCallbacks.finishBroadcast();
+                }
+                case GET_TRACKS : {
+                    // Broadcast to all clients the new value.
+                    final int N = mCallbacks.beginBroadcast();
+                    for (int i=0; i<N; i++) {
+                        try {
+                            mCallbacks.getBroadcastItem(i).onGetTopTracks(mSongs);
+                        } catch (RemoteException e) {
+                            // The RemoteCallbackList will take care of removing
+                            // the dead object for us.
+                        }
+                    }
+                    mCallbacks.finishBroadcast();
+                }
+
+                case GET_TOKEN : {
+                    // Broadcast to all clients the new value.
+                    final int N = mCallbacks.beginBroadcast();
+                    for (int i=0; i<N; i++) {
+                        try {
+                            mCallbacks.getBroadcastItem(i).onGetToken(token);
                         } catch (RemoteException e) {
                             // The RemoteCallbackList will take care of removing
                             // the dead object for us.
@@ -151,25 +181,51 @@ public class MusicService extends Service implements
             });
 
         }
+
+        @Override
         public void registerCallback(IMusicServiceCallback cb) {
             if (cb != null) mCallbacks.register(cb);
         }
+
+        @Override
         public void unregisterCallback(IMusicServiceCallback cb) {
             if (cb != null) mCallbacks.unregister(cb);
         }
 
+        @Override
+        public void getToken(final int Position) throws RemoteException {
+            mExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    mCurrentIndexOnQueue = Position;
+                    token = mMediaSession.getSessionToken();
+                    mHandler.sendMessage(mHandler.obtainMessage(GET_TOKEN));
+                }
+            });
+        }
+
+        @Override
+        public void getTopTracks(final Singer singer) throws RemoteException {
+            mExecutor.execute(new Runnable() {
+                @Override
+                public void run() {
+                    mSongs = mMusicProvider.getTopTracks(singer.getmSpotifyId());
+                    mHandler.sendMessage(mHandler.obtainMessage(GET_TRACKS));
+                }
+            });
+        }
     };
     public void onCreate() {
 
         super.onCreate();
 
         //initialize fields
-        mRequestHandler = new RequestHandler();
-        mReqMessenger = new Messenger(mRequestHandler);
+        //mRequestHandler = new RequestHandler();
+        mPlayingQueue = new ArrayList<>();
 
         //initialize session
         mMediaSession = new MediaSessionCompat(this, "Music Service");
-        mMediaSession.setCallback(mCallback);
+        mMediaSession.setCallback(mSessionCb);
         mMediaSession.setQueue(mPlayingQueue);
 
 
@@ -186,11 +242,15 @@ public class MusicService extends Service implements
 
 
         //spotify api
-        spotify = new SpotifyApi().getService();
+        //spotify = new SpotifyApi().getService();
 
         //the playing queue
-        mPlayingQueue = new ArrayList<>();
+
         mPlayback = new LocalPlayback(this, mMusicProvider);
+
+        updatePlaybackState(null);
+
+        handlePlayRequest();
     }
 
 
@@ -208,7 +268,7 @@ public class MusicService extends Service implements
         return START_STICKY;
     }
 
-    private MediaSessionCompat.Callback mCallback = new MediaSessionCompat.Callback() {
+    private MediaSessionCompat.Callback mSessionCb = new MediaSessionCompat.Callback() {
         @Override
         public void onPlay() {
             LogHelper.d(TAG, "play");
@@ -379,133 +439,77 @@ public class MusicService extends Service implements
     }
 
 
-    public static ArrayList<Song> getSongs(Message msg) {
-        return msg.getData().getParcelableArrayList("com.whitecloud.ron.musicplayer.songs");
-    }
-
-    public static MediaSessionCompat.Token getToken(Message msg) {
-        return msg.getData().getParcelable("com.whitecloud.ron.Token");
-    }
-
-    @Override
-    public void onMusicCatalogReady(boolean success, Messenger replyMessenger, List<Song> songs) {
-        Message msg = Message.obtain();
-        msg.what = GET_TRACKS_OK;
-        Bundle data = new Bundle();
-        data.putParcelableArrayList("com.whitecloud.ron.musicplayer.songs", (ArrayList) songs);
-        msg.setData(data);
-
-        try {
-            replyMessenger.send(msg);
-        } catch (RemoteException r) {
-            r.printStackTrace();
-        }
-    }
-
-    class RequestHandler extends Handler {
-
-        SharedPreferences database;
-        private final int MAX_FIXED_THREAD_POOL = 4;
-        ExecutorService mExecutor;
-
-        public RequestHandler() {
-            database = PreferenceManager.getDefaultSharedPreferences(MusicService.this);
-            mExecutor = Executors.newFixedThreadPool(MAX_FIXED_THREAD_POOL);
-        }
-
-        @Override
-        public void handleMessage(final Message msg) {
-            final Messenger replyMessenger = msg.replyTo;
-                if(replyMessenger == null) {
-                    return ;
-                }
 
 
-            switch (msg.what) {
-                case MusicService.GET_ARTISTS: {
-                    final String query = ArtistsFragment.getQuery(msg);
-                    mExecutor.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.i(TAG, Integer.toString(msg.what));
-                            Message artists = onGetArtists(query);
-                            try {
-                                replyMessenger.send(artists);
-                            } catch (RemoteException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    });
-                }
+//    class RequestHandler extends Handler {
+//
+//        SharedPreferences database;
+//        private final int MAX_FIXED_THREAD_POOL = 4;
+//        ExecutorService mExecutor;
+//
+//        public RequestHandler() {
+//            database = PreferenceManager.getDefaultSharedPreferences(MusicService.this);
+//            mExecutor = Executors.newFixedThreadPool(MAX_FIXED_THREAD_POOL);
+//        }
+//
+//        @Override
+//        public void handleMessage(final Message msg) {
+//            final Messenger replyMessenger = msg.replyTo;
+//                if(replyMessenger == null) {
+//                    return ;
+//                }
+//
+//
+//            switch (msg.what) {
+//                case MusicService.GET_ARTISTS: {
+//                    final String query = ArtistsFragment.getQuery(msg);
+//                    mExecutor.execute(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            Log.i(TAG, Integer.toString(msg.what));
+//                            Message artists = onGetArtists(query);
+//                            try {
+//                                replyMessenger.send(artists);
+//                            } catch (RemoteException e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
+//                    });
+//                }
+//
+//                break;
+//                case MusicService.GET_TRACKS: {
+//                    final Singer singer = TracksFragment.getSinger(msg);
+//                    mExecutor.execute(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            try {
+//                                //onGetTopTracks(singer.getmSpotifyId(), replyMessenger);
+//                            } catch (IOException e) {
+//                                e.printStackTrace();
+//                            }
+//
+//                        }
+//                    });
+//                }
+//
+//                case MusicService.GET_TOKEN: {
+//                    mExecutor.execute(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            Message message = onGetToken();
+//                            try {
+//                                replyMessenger.send(message);
+//                            } catch (RemoteException e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
+//                    });
+//                }
+//            }
+//        }
+//    }
 
-                break;
-                case MusicService.GET_TRACKS: {
-                    final Singer singer = TracksFragment.getSinger(msg);
-                    mExecutor.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                onGetTopTracks(singer.getmSpotifyId(), replyMessenger);
-                            } catch (IOException e) {
-                                e.printStackTrace();
-                            }
-
-                        }
-                    });
-                }
-
-                case MusicService.GET_TOKEN: {
-                    mExecutor.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            Message message = onGetToken();
-                            try {
-                                replyMessenger.send(message);
-                            } catch (RemoteException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    });
-                }
-            }
-        }
-    }
-
-    private Message onGetToken() {
-        MediaSessionCompat.Token token = mMediaSession.getSessionToken();
-
-        Message message = Message.obtain();
-        message.what = GET_TOKEN;
-        Bundle data = new Bundle();
-        data.putParcelable("com.whitecloud.ron.Token", token);
-        message.setData(data);
-
-        return message;
-    }
-
-    Message onGetArtists(String query) throws RetrofitError {
-
-        mArtists = mMusicProvider.searchArtists(query);
-
-        Message reply = Message.obtain();
-        Bundle  data  = new Bundle();
-        if (!mArtists.isEmpty()) {
-            data.putParcelableArrayList("artists", (ArrayList) mArtists);
-        }
-        reply.setData(data);
-
-        return reply;
-    }
-
-
-    public static ArrayList<Singer> artists(Message msg) {
-        return msg.getData().getParcelableArrayList("artists");
-    }
-
-    void onGetTopTracks(String spotifyId, Messenger replyHandler) throws RetrofitError, IOException {
-        mMusicProvider.retrieveMediaAsync(this, spotifyId, replyHandler);
-        updatePlaybackState(null);
-    }
 
 
     private void updatePlaybackState(String error) {
@@ -516,9 +520,18 @@ public class MusicService extends Service implements
         }
 
         PlaybackStateCompat.Builder stateBuilder;
-        long                        actions = getAvailableActions();
+        long actions = getAvailableActions();
         stateBuilder = new PlaybackStateCompat.Builder()
-                .setActions(PlaybackStateCompat.ACTION_PAUSE);
+                .setActions(PlaybackStateCompat.ACTION_FAST_FORWARD |
+                                PlaybackStateCompat.ACTION_REWIND |
+                                PlaybackStateCompat.ACTION_SEEK_TO |
+                                PlaybackStateCompat.ACTION_STOP |
+                                PlaybackStateCompat.ACTION_SKIP_TO_QUEUE_ITEM |
+                                PlaybackStateCompat.ACTION_PAUSE |
+                                PlaybackStateCompat.ACTION_PLAY |
+                                PlaybackStateCompat.ACTION_SKIP_TO_NEXT |
+                                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
+                );
 
         setCustomAction(stateBuilder);
         int state = mPlayback.getState();
@@ -595,10 +608,11 @@ public class MusicService extends Service implements
     }
 
     private long getAvailableActions() {
-        long actions = PlaybackStateCompat.ACTION_PLAY |
-                PlaybackStateCompat.ACTION_PAUSE |
-                PlaybackStateCompat.ACTION_SKIP_TO_NEXT |
-                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS;
+        long actions =  PlaybackStateCompat.ACTION_FAST_FORWARD|
+                        PlaybackStateCompat.ACTION_REWIND |
+                        PlaybackStateCompat.ACTION_SEEK_TO |
+                        PlaybackStateCompat.ACTION_STOP |
+                        PlaybackStateCompat.ACTION_SKIP_TO_QUEUE_ITEM;
         if (mPlayingQueue == null || mPlayingQueue.isEmpty()) {
             return actions;
         }

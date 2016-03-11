@@ -118,7 +118,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onListFragmentInteraction(Song item) {
+    public void onListFragmentInteraction(Song item, int Position) {
         boolean dualPane = Resources.getSystem().getBoolean(R.bool.dualPane);
 
         if(dualPane) {

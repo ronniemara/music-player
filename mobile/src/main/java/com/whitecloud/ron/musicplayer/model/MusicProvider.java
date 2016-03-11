@@ -85,6 +85,11 @@ public class MusicProvider {
     // Categorized caches for music track data:
     private ConcurrentMap<String, List<MediaMetadataCompat>> mMusicListByGenre;
     private final ConcurrentMap<String, MutableMediaMetadata> mMusicListById;
+
+    public ConcurrentMap<String, String> getmMusicSourceList() {
+        return mMusicSourceList;
+    }
+
     private ConcurrentMap<String, String> mMusicSourceList;
 
     private final Set<String> mFavoriteTracks;
@@ -97,6 +102,8 @@ public class MusicProvider {
         return mTrackSource;
     }
 
+
+
     enum State {
         NON_INITIALIZED, INITIALIZING, INITIALIZED
     }
@@ -104,7 +111,7 @@ public class MusicProvider {
     private volatile State mCurrentState = State.NON_INITIALIZED;
 
     public interface Callback {
-        void onMusicCatalogReady(boolean success, Messenger replyHandler, List<Song> songs);
+        void onMusicCatalogReady(boolean success, List<Song> songs);
     }
 
     public MusicProvider() {
@@ -118,6 +125,53 @@ public class MusicProvider {
         mSongs = new ArrayList<>();
     }
 
+    public ArrayList<Song> getTopTracks(String spotifyId) {
+        try {
+            if (mCurrentState == State.NON_INITIALIZED) {
+                mCurrentState = State.INITIALIZING;
+                SpotifyApi api = new SpotifyApi();
+                SpotifyService spotify = api.getService();
+                Tracks tracks = spotify.getArtistTopTrack(spotifyId, "CA");
+                List<Track> trackList = tracks.tracks;
+
+                if (trackList != null) {
+                    for (int j = 0; j < trackList.size(); j++) {
+                        Track track = trackList.get(j);
+                        MediaMetadataCompat item = new MediaMetadataCompat.Builder()
+                                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, track.id)
+//                                 .putString(CUSTOM_METADATA_TRACK_SOURCE, track.preview_url)
+                                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, track.album.name)
+                                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artists.get(0).name)
+                                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, track.duration_ms)
+                                .putString(MediaMetadataCompat.METADATA_KEY_GENRE, track.type)
+                                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, track.album.images.get(0).url)
+                                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.name)
+                                .putLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, track.track_number)
+                                .putLong(MediaMetadataCompat.METADATA_KEY_NUM_TRACKS, trackList.size())
+                                .build();
+                        String musicId = item.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID);
+                        mMusicListById.put(musicId, new MutableMediaMetadata(musicId, item));
+                        mMusicSourceList.put(musicId, track.preview_url);
+                        mSongs.add(new Song(track.preview_url, track.name, track.album.name,
+                                track.album.images.get(0).url, track.album.images.get(1).url));
+                    }
+                    buildListsByGenre();
+                }
+                mCurrentState = State.INITIALIZED;
+            }
+        } catch (RetrofitError e) {
+            LogHelper.e(TAG, e, "Could not retrieve music list");
+        } finally {
+            if (mCurrentState != State.INITIALIZED) {
+                // Something bad happened, so we reset state to NON_INITIALIZED to allow
+                // retries (eg if the network connection is temporary unavailable)
+                mCurrentState = State.NON_INITIALIZED;
+            }
+
+            return (ArrayList) mSongs;
+
+        }
+    }
     /**
      * Get an iterator over the list of genres
      *
@@ -244,30 +298,30 @@ public class MusicProvider {
      * Get the list of music tracks from a server and caches the track information
      * for future reference, keying tracks by musicId and grouping by genre.
      */
-    public void retrieveMediaAsync(final Callback callback, String spotifyId, final Messenger replyHandler) {
-        LogHelper.d(TAG, "retrieveMediaAsync called");
-        if (mCurrentState == State.INITIALIZED) {
-            // Nothing to do, execute callback immediately
-            callback.onMusicCatalogReady(true, replyHandler, mSongs);
-            return;
-        }
-
-        // Asynchronously load the music catalog in a separate thread
-        new AsyncTask<String, Void, State>() {
-            @Override
-            protected State doInBackground(String... params) {
-                retrieveMedia(params[0]);
-                return mCurrentState;
-            }
-
-            @Override
-            protected void onPostExecute(State current) {
-                if (callback != null) {
-                    callback.onMusicCatalogReady(current == State.INITIALIZED, replyHandler, mSongs);
-                }
-            }
-        }.execute(spotifyId);
-    }
+//    public void retrieveMediaAsync(final Callback callback, String spotifyId) {
+//        LogHelper.d(TAG, "retrieveMediaAsync called");
+//        if (mCurrentState == State.INITIALIZED) {
+//            // Nothing to do, execute callback immediately
+//            callback.onMusicCatalogReady(true, mSongs);
+//            return;
+//        }
+//
+//        // Asynchronously load the music catalog in a separate thread
+//        new AsyncTask<String, Void, State>() {
+//            @Override
+//            protected State doInBackground(String... params) {
+//                retrieveMedia(params[0]);
+//                return mCurrentState;
+//            }
+//
+//            @Override
+//            protected void onPostExecute(State current) {
+//                if (callback != null) {
+//                    callback.onMusicCatalogReady(current == State.INITIALIZED, mSongs);
+//                }
+//            }
+//        }.execute(spotifyId);
+//    }
 
     private synchronized void buildListsByGenre() {
         ConcurrentMap<String, List<MediaMetadataCompat>> newMusicListByGenre = new ConcurrentHashMap<>();
@@ -304,131 +358,131 @@ public class MusicProvider {
         }
     }
 
-    private synchronized void retrieveMedia(String spotifyId) {
-
-        try {
-            if (mCurrentState == State.NON_INITIALIZED) {
-                mCurrentState = State.INITIALIZING;
-        SpotifyApi api = new SpotifyApi();
-        SpotifyService spotify = api.getService();
-        Tracks tracks = spotify.getArtistTopTrack(spotifyId, "CA");
-        List<Track> trackList = tracks.tracks;
+//    private synchronized void retrieveMedia(String spotifyId) {
 //
-//        mSongs.clear();
+//        try {
+//            if (mCurrentState == State.NON_INITIALIZED) {
+//                mCurrentState = State.INITIALIZING;
+//        SpotifyApi api = new SpotifyApi();
+//        SpotifyService spotify = api.getService();
+//        Tracks tracks = spotify.getArtistTopTrack(spotifyId, "CA");
+//        List<Track> trackList = tracks.tracks;
+////
+////        mSongs.clear();
+////
+////        if(!trackList.isEmpty()) {
+////            int count = 0;
+////            for (int i = 0; i < trackList.size(); i++) {
+////                Track track = trackList.get(i);
+////                mSongs.add(new Song(track.preview_url, track.name, track.album.name, track.album.images.get(0).url, track.album.images.get(1).url));
+////                URL url = null;
+////                try {
+////                    url = new URL(track.album.images.get(0).url);
+////                }catch (MalformedURLException e) {
+////                    e.printStackTrace();
+////                }
+////                Bitmap image = BitmapFactory.decodeStream(url.openStream());
+////
+////                MediaMetadataCompat.Builder metadataBuilder = new MediaMetadataCompat.Builder();
+////                metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artists.get(0).name)
+////                        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.name)
+////                        .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, track.id)
+////                        .putBitmap(MediaMetadataCompat.METADATA_KEY_ART, image);
+////                MediaMetadataCompat metadata = metadataBuilder.build();
+////
+////                queueItemList = new ArrayList<>();
+////                queueItemList.add(metadata.getDescription());
+////                mPlayingQueue.add(new  MediaSessionCompat.QueueItem(metadata.getDescription(), count++));
+////            }
+////        }
 //
-//        if(!trackList.isEmpty()) {
-//            int count = 0;
-//            for (int i = 0; i < trackList.size(); i++) {
-//                Track track = trackList.get(i);
-//                mSongs.add(new Song(track.preview_url, track.name, track.album.name, track.album.images.get(0).url, track.album.images.get(1).url));
-//                URL url = null;
-//                try {
-//                    url = new URL(track.album.images.get(0).url);
-//                }catch (MalformedURLException e) {
-//                    e.printStackTrace();
+//
+//
+//
+////                int slashPos = CATALOG_URL.lastIndexOf('/');
+////                String path = CATALOG_URL.substring(0, slashPos + 1);
+////                JSONObject jsonObj = fetchJSONFromUrl(CATALOG_URL);
+////                if (jsonObj == null) {
+////                    return;
+////                }
+////                JSONArray tracks = jsonObj.getJSONArray(JSON_MUSIC);
+//                if (trackList != null) {
+//                    for (int j = 0; j < trackList.size(); j++) {
+//                        Track track = trackList.get(j);
+//                        MediaMetadataCompat item = new MediaMetadataCompat.Builder()
+//                                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID,  track.id)
+////                                 .putString(CUSTOM_METADATA_TRACK_SOURCE, track.preview_url)
+//                                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, track.album.name)
+//                                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artists.get(0).name)
+//                                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, track.duration_ms)
+//                                .putString(MediaMetadataCompat.METADATA_KEY_GENRE, track.type)
+//                                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, track.album.images.get(0).url)
+//                                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.name)
+//                                .putLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, track.track_number)
+//                                .putLong(MediaMetadataCompat.METADATA_KEY_NUM_TRACKS, trackList.size())
+//                                .build();
+//                        String musicId = item.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID);
+//                        mMusicListById.put(musicId, new MutableMediaMetadata(musicId, item));
+//                        mMusicSourceList.put(musicId, track.preview_url);
+//                        mSongs.add(new Song(track.preview_url, track.name, track.album.name,
+//                                track.album.images.get(0).url, track.album.images.get(1).url));
+//                    }
+//                    buildListsByGenre();
 //                }
-//                Bitmap image = BitmapFactory.decodeStream(url.openStream());
-//
-//                MediaMetadataCompat.Builder metadataBuilder = new MediaMetadataCompat.Builder();
-//                metadataBuilder.putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artists.get(0).name)
-//                        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.name)
-//                        .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, track.id)
-//                        .putBitmap(MediaMetadataCompat.METADATA_KEY_ART, image);
-//                MediaMetadataCompat metadata = metadataBuilder.build();
-//
-//                queueItemList = new ArrayList<>();
-//                queueItemList.add(metadata.getDescription());
-//                mPlayingQueue.add(new  MediaSessionCompat.QueueItem(metadata.getDescription(), count++));
+//                mCurrentState = State.INITIALIZED;
+//            }
+//        } catch (RetrofitError e) {
+//            LogHelper.e(TAG, e, "Could not retrieve music list");
+//        } finally {
+//            if (mCurrentState != State.INITIALIZED) {
+//                // Something bad happened, so we reset state to NON_INITIALIZED to allow
+//                // retries (eg if the network connection is temporary unavailable)
+//                mCurrentState = State.NON_INITIALIZED;
 //            }
 //        }
-
-
-
-
-//                int slashPos = CATALOG_URL.lastIndexOf('/');
-//                String path = CATALOG_URL.substring(0, slashPos + 1);
-//                JSONObject jsonObj = fetchJSONFromUrl(CATALOG_URL);
-//                if (jsonObj == null) {
-//                    return;
-//                }
-//                JSONArray tracks = jsonObj.getJSONArray(JSON_MUSIC);
-                if (trackList != null) {
-                    for (int j = 0; j < trackList.size(); j++) {
-                        Track track = trackList.get(j);
-                        MediaMetadataCompat item = new MediaMetadataCompat.Builder()
-                                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID,  track.id)
-//                                 .putString(CUSTOM_METADATA_TRACK_SOURCE, track.preview_url)
-                                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, track.album.name)
-                                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artists.get(0).name)
-                                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, track.duration_ms)
-                                .putString(MediaMetadataCompat.METADATA_KEY_GENRE, track.type)
-                                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, track.album.images.get(0).url)
-                                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.name)
-                                .putLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, track.track_number)
-                                .putLong(MediaMetadataCompat.METADATA_KEY_NUM_TRACKS, trackList.size())
-                                .build();
-                        String musicId = item.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID);
-                        mMusicListById.put(musicId, new MutableMediaMetadata(musicId, item));
-                        mMusicSourceList.put(musicId, track.preview_url);
-                        mSongs.add(new Song(track.preview_url, track.name, track.album.name,
-                                track.album.images.get(0).url, track.album.images.get(1).url));
-                    }
-                    buildListsByGenre();
-                }
-                mCurrentState = State.INITIALIZED;
-            }
-        } catch (RetrofitError e) {
-            LogHelper.e(TAG, e, "Could not retrieve music list");
-        } finally {
-            if (mCurrentState != State.INITIALIZED) {
-                // Something bad happened, so we reset state to NON_INITIALIZED to allow
-                // retries (eg if the network connection is temporary unavailable)
-                mCurrentState = State.NON_INITIALIZED;
-            }
-        }
-    }
-
-//    private MediaMetadataCompat buildFromJSON(JSONObject json, String basePath) throws JSONException {
-//        String title = json.getString(JSON_TITLE);
-//        String album = json.getString(JSON_ALBUM);
-//        String artist = json.getString(JSON_ARTIST);
-//        String genre = json.getString(JSON_GENRE);
-//        String source = json.getString(JSON_SOURCE);
-//        String iconUrl = json.getString(JSON_IMAGE);
-//        int trackNumber = json.getInt(JSON_TRACK_NUMBER);
-//        int totalTrackCount = json.getInt(JSON_TOTAL_TRACK_COUNT);
-//        int duration = json.getInt(JSON_DURATION) * 1000; // ms
-//
-//        LogHelper.d(TAG, "Found music track: ", json);
-//
-//        // Media is stored relative to JSON file
-//        if (!source.startsWith("http")) {
-//            source = basePath + source;
-//        }
-//        if (!iconUrl.startsWith("http")) {
-//            iconUrl = basePath + iconUrl;
-//        }
-//        // Since we don't have a unique ID in the server, we fake one using the hashcode of
-//        // the music source. In a real world app, this could come from the server.
-//        String id = String.valueOf(source.hashCode());
-//
-//        // Adding the music source to the MediaMetadata (and consequently using it in the
-//        // mediaSession.setMetadata) is not a good idea for a real world music app, because
-//        // the session metadata can be accessed by notification listeners. This is done in this
-//        // sample for convenience only.
-//        return new MediaMetadataCompat.Builder()
-//                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, id)
-////                .putString(CUSTOM_METADATA_TRACK_SOURCE, source)
-//                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
-//                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
-//                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
-//                .putString(MediaMetadataCompat.METADATA_KEY_GENRE, genre)
-//                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, iconUrl)
-//                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
-//                .putLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, trackNumber)
-//                .putLong(MediaMetadataCompat.METADATA_KEY_NUM_TRACKS, totalTrackCount)
-//                .build();
 //    }
+//
+////    private MediaMetadataCompat buildFromJSON(JSONObject json, String basePath) throws JSONException {
+////        String title = json.getString(JSON_TITLE);
+////        String album = json.getString(JSON_ALBUM);
+////        String artist = json.getString(JSON_ARTIST);
+////        String genre = json.getString(JSON_GENRE);
+////        String source = json.getString(JSON_SOURCE);
+////        String iconUrl = json.getString(JSON_IMAGE);
+////        int trackNumber = json.getInt(JSON_TRACK_NUMBER);
+////        int totalTrackCount = json.getInt(JSON_TOTAL_TRACK_COUNT);
+////        int duration = json.getInt(JSON_DURATION) * 1000; // ms
+////
+////        LogHelper.d(TAG, "Found music track: ", json);
+////
+////        // Media is stored relative to JSON file
+////        if (!source.startsWith("http")) {
+////            source = basePath + source;
+////        }
+////        if (!iconUrl.startsWith("http")) {
+////            iconUrl = basePath + iconUrl;
+////        }
+////        // Since we don't have a unique ID in the server, we fake one using the hashcode of
+////        // the music source. In a real world app, this could come from the server.
+////        String id = String.valueOf(source.hashCode());
+////
+////        // Adding the music source to the MediaMetadata (and consequently using it in the
+////        // mediaSession.setMetadata) is not a good idea for a real world music app, because
+////        // the session metadata can be accessed by notification listeners. This is done in this
+////        // sample for convenience only.
+////        return new MediaMetadataCompat.Builder()
+////                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, id)
+//////                .putString(CUSTOM_METADATA_TRACK_SOURCE, source)
+////                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, album)
+////                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, artist)
+////                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
+////                .putString(MediaMetadataCompat.METADATA_KEY_GENRE, genre)
+////                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, iconUrl)
+////                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, title)
+////                .putLong(MediaMetadataCompat.METADATA_KEY_TRACK_NUMBER, trackNumber)
+////                .putLong(MediaMetadataCompat.METADATA_KEY_NUM_TRACKS, totalTrackCount)
+////                .build();
+////    }
 
     /**
      * Download a JSON file from a server, parse the content and return the JSON

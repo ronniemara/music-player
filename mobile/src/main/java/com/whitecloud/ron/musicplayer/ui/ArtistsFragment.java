@@ -12,6 +12,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.support.v4.app.Fragment;
+import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
@@ -32,6 +33,7 @@ import com.whitecloud.ron.musicplayer.MusicService;
 import com.whitecloud.ron.musicplayer.MyArtistsRecyclerViewAdapter;
 import com.whitecloud.ron.musicplayer.R;
 import com.whitecloud.ron.musicplayer.artist.Singer;
+import com.whitecloud.ron.musicplayer.track.Song;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -98,8 +100,13 @@ public class ArtistsFragment extends Fragment {
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            isBound = false;
+            try {
+                mMusicService.unregisterCallback(mCallback);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
             mMusicService = null;
+            isBound = false;
         }
     };
 
@@ -111,6 +118,16 @@ public class ArtistsFragment extends Fragment {
             data.putParcelableArrayList("singers", (ArrayList)singers);
             message.setData(data);
             mReplyHandler.sendMessage(message);
+        }
+
+        @Override
+        public void onGetTopTracks(List<Song> songs) throws RemoteException {
+
+        }
+
+        @Override
+        public void onGetToken(MediaSessionCompat.Token token) throws RemoteException {
+
         }
     };
 
@@ -146,6 +163,8 @@ public class ArtistsFragment extends Fragment {
 //                    }
                     //Log.i(TAG, Integer.toString(mArtists.size()));
                 }
+
+
             }
         }
     }

@@ -11,6 +11,7 @@ import android.os.Message;
 import android.os.Messenger;
 import android.os.RemoteException;
 import android.support.v4.app.Fragment;
+import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -20,12 +21,15 @@ import android.view.View;
 import android.view.ViewGroup;
 
 
+import com.whitecloud.ron.musicplayer.IMusicService;
+import com.whitecloud.ron.musicplayer.IMusicServiceCallback;
 import com.whitecloud.ron.musicplayer.MusicService;
 import com.whitecloud.ron.musicplayer.R;
 import com.whitecloud.ron.musicplayer.artist.Singer;
 import com.whitecloud.ron.musicplayer.track.Song;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -48,8 +52,7 @@ public class TracksFragment extends Fragment {
     private List<Song> mSongs;
     private Singer mArtist;
 
-    private Messenger mReqMessengerRef;
-    private Messenger mReplyMessenger;
+    private IMusicService mIMusicService;
     private ReplyHandler mReplyHandler;
     private boolean isBound;
 
@@ -66,25 +69,22 @@ public class TracksFragment extends Fragment {
     class ReplyHandler extends Handler {
         @Override
         public void handleMessage(Message msg) {
-            switch(msg.what) {
-                case MusicService.GET_TRACKS_OK : {
-                    ArrayList<Song> songs = MusicService.getSongs(msg);
-
+            switch (msg.what) {
+                case MusicService.GET_TRACKS: {
                     mSongs.clear();
 
-                    for(int i=0; i< songs.size(); i++) {
-                        Song song = songs.get(i);
-                        if(!songs.isEmpty()) {
-                            mSongs.add(new Song(song.getmPreviewUrl(), song.getmName(),
-                                    song.getmAlbum(), song.getmSmallImageUrl(), song.getmLargeImageUrl()));
-                            mViewAdapter.notifyDataSetChanged();
-                        }
-                    }
-                    Log.i(TAG, Integer.toString(mSongs.size()));
+                    Collection<Song> songs = (Collection) msg.getData().getParcelableArrayList("songs");
+                    mSongs.addAll(songs);
+                    mViewAdapter.notifyDataSetChanged();
                 }
             }
+            Log.i(TAG, Integer.toString(mSongs.size()));
         }
+
+
     }
+
+
 
     // TODO: Customize parameter initialization
     @SuppressWarnings("unused")
@@ -95,6 +95,27 @@ public class TracksFragment extends Fragment {
         fragment.setArguments(args);
         return fragment;
     }
+
+    private IMusicServiceCallback.Stub mCallback = new IMusicServiceCallback.Stub() {
+        @Override
+        public  void onGetArtists(List<Singer> singers) throws RemoteException {
+
+        }
+
+        @Override
+        public void onGetTopTracks(List<Song> songs) throws RemoteException {
+            Message message = mReplyHandler.obtainMessage(MusicService.GET_TRACKS);
+            Bundle data = new Bundle();
+            data.putParcelableArrayList("songs", (ArrayList)songs);
+            message.setData(data);
+            mReplyHandler.sendMessage(message);
+        }
+
+        @Override
+        public void onGetToken(MediaSessionCompat.Token token) throws RemoteException {
+
+        }
+    };
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -112,7 +133,7 @@ public class TracksFragment extends Fragment {
 
         mSongs = new ArrayList<>();
         mReplyHandler = new ReplyHandler();
-        mReplyMessenger = new Messenger(mReplyHandler);
+
 
     }
 
@@ -127,31 +148,31 @@ public class TracksFragment extends Fragment {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             Log.i(TAG, "inside TracksFragment");
-            mReqMessengerRef = new Messenger(service);
+            mIMusicService = IMusicService.Stub.asInterface(service);
 
-                Message message = Message.obtain();
-                message.replyTo = mReplyMessenger;
-                message.what = MusicService.GET_TRACKS;
-                Bundle data = new Bundle();
-                data.putParcelable("com.whitecloud.ron.mArtist", mArtist);
-                message.setData(data);
-
-                try {
-                    mReqMessengerRef.send(message);
-                } catch (RemoteException e) {
-                    e.printStackTrace();
-                }
-
+            try {
+                mIMusicService.registerCallback(mCallback);
+                mIMusicService.getTopTracks(mArtist);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
 
             isBound = true;
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            mReqMessengerRef = null;
+            try {
+                mIMusicService.unregisterCallback(mCallback);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+            mIMusicService = null;
             isBound = false;
         }
     };
+
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -216,7 +237,7 @@ public class TracksFragment extends Fragment {
      */
     public interface OnListFragmentInteractionListener {
         // TODO: Update argument type and name
-        void onListFragmentInteraction(Song item);
+        void onListFragmentInteraction(Song item, int pos);
     }
 
     public static Singer getSinger(Message message) {

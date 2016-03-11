@@ -89,10 +89,11 @@ public class TracksActivity extends AppCompatActivity implements TracksFragment.
     }
 
     @Override
-    public void onListFragmentInteraction(Song item) {
+    public void onListFragmentInteraction(Song item, int Position) {
         Intent i = new Intent(this, PlayerActivity.class);
         Bundle b = new Bundle();
         b.putParcelable("com.whitecloud.ron.Song", item);
+        b.putInt("position", Position);
         i.putExtras(b);
 
         startActivity(i);

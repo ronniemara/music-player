@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.net.Uri;
+import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -20,6 +21,7 @@ import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
@@ -27,8 +29,11 @@ import android.widget.MediaController;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
+import com.whitecloud.ron.musicplayer.IMusicService;
+import com.whitecloud.ron.musicplayer.IMusicServiceCallback;
 import com.whitecloud.ron.musicplayer.MusicService;
 import com.whitecloud.ron.musicplayer.R;
+import com.whitecloud.ron.musicplayer.artist.Singer;
 import com.whitecloud.ron.musicplayer.track.Song;
 
 import java.util.List;
@@ -55,7 +60,8 @@ public class PlayerFragment extends DialogFragment {
     private MediaController                         mMediaControllerWidget;
     private MediaSessionCompat.Token                mToken;
     private Handler                                 mReplyHandler;
-    private Messenger                               mReqMessengerRef;
+    private IMusicService                           mIMusicService;
+    private int mCurrentIndexOnQueue = 0;
 
     private Song                          song;
     private OnFragmentInteractionListener mListener;
@@ -82,24 +88,42 @@ public class PlayerFragment extends DialogFragment {
         return fragment;
     }
 
+    private IMusicServiceCallback.Stub mCallback = new IMusicServiceCallback.Stub() {
+        @Override
+        public void onGetArtists(List<Singer> singers) throws RemoteException {
+
+        }
+
+        @Override
+        public void onGetTopTracks(List<Song> songs) throws RemoteException {
+
+        }
+
+        @Override
+        public void onGetToken(MediaSessionCompat.Token token) throws RemoteException {
+            mToken = token;
+            mReplyHandler.sendMessage(mReplyHandler.obtainMessage(MusicService.GET_TOKEN));
+        }
+
+
+    };
     private ServiceConnection mServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            mReqMessengerRef = new Messenger(service);
-            Message message = Message.obtain();
-            message.replyTo = new Messenger(mReplyHandler);
-            message.what = MusicService.GET_TOKEN;
+            mIMusicService = IMusicService.Stub.asInterface(service);
 
             try {
-                mReqMessengerRef.send(message);
+                mIMusicService.registerCallback(mCallback);
+                mIMusicService.getToken(mCurrentIndexOnQueue);
             } catch (RemoteException e) {
                 e.printStackTrace();
             }
+
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            mReqMessengerRef = null;
+            mIMusicService = null;
         }
     };
 
@@ -108,28 +132,41 @@ public class PlayerFragment extends DialogFragment {
         public void handleMessage(Message msg) {
 
             switch (msg.what) {
-                case MusicService.GET_TOKEN: {
-                    mToken = MusicService.getToken(msg);
-                  onTokenReceived(mToken);
+                case MusicService.GET_TOKEN: {;
+                    try {
+                        mMediaControllerSession = new MediaControllerCompat(PlayerFragment.this.getActivity(), mToken);
+                        mTransportControls = mMediaControllerSession.getTransportControls();
+                        mMediaControllerSession.registerCallback(new ControllerSessionCallback());
+                        //Log.i(TAG, mMediaControllerSession.getSessionToken().toString());
+                        mMediaControllerWidget = new MediaController(getActivity()){
+                            @Override
+                            public boolean onTouchEvent(MotionEvent event) {
+                                switch (event.getAction()) {
+                                    case MotionEvent.ACTION_DOWN : {
+                                        if(!isShowing()) {
+                                            show();
+                                            return true;
+                                        }
+
+                                    }
+                                }
+                                return super.onTouchEvent(event);
+                            }
+                        };
+                        mMediaControllerWidget.setAnchorView(mView);
+                        mMediaControllerWidget.setMediaPlayer(mediaPlayerControl);
+                        mMediaControllerWidget.setEnabled(true);
+                        mMediaControllerWidget.show();
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
     }
 
     private void onTokenReceived(MediaSessionCompat.Token mToken) {
-        try {
-            mMediaControllerSession = new MediaControllerCompat(PlayerFragment.this.getActivity(), mToken);
-            mTransportControls = mMediaControllerSession.getTransportControls();
-            mMediaControllerSession.registerCallback(new ControllerSessionCallback());
-            //Log.i(TAG, mMediaControllerSession.getSessionToken().toString());
-            mMediaControllerWidget = new MediaController(getActivity());
-            mMediaControllerWidget.setAnchorView(mView);
-            mMediaControllerWidget.setMediaPlayer(mediaPlayerControl);
-            mMediaControllerWidget.setEnabled(true);
-            mMediaControllerWidget.show();
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
+
     }
 
     @Override
@@ -147,10 +184,12 @@ public class PlayerFragment extends DialogFragment {
 
         if (getArguments() != null) {
             song = getArguments().getParcelable(SONG);
+
         }
 
         Bundle extras = getActivity().getIntent().getExtras();
         song = extras.getParcelable("com.whitecloud.ron.Song");
+        mCurrentIndexOnQueue = extras.getInt("position");
 
         mReplyHandler = new ReplyHandler();
 
